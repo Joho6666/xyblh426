@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+  <title>校园便利盒 - 管理后台</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#426089", "on-primary": "#f8f8ff",
+            "error": "#a83836", "on-error": "#fff7f6",
+            "surface": "#f7f9fc", "on-surface": "#2c3338", "on-surface-variant": "#596065",
+          },
+          fontFamily: { "headline": ["Plus Jakarta Sans"], "body": ["Be Vietnam Pro"] },
+        },
+      },
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body { min-height: 100dvh; overscroll-behavior: none; }
+    #toast { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .panel { display: none; } .panel.active { display: block; }
+    .badge-pending { background: #fef3c7; color: #92400e; } .badge-active { background: #d1fae5; color: #065f46; }
+    .badge-banned { background: #fee2e2; color: #991b1b; } .badge-deleted { background: #f3f4f6; color: #6b7280; }
+    .badge-admin { background: #ede9fe; color: #5b21b6; } .badge-resolved { background: #d1fae5; color: #065f46; }
+    .badge-dismissed { background: #e5e7eb; color: #374151; }
+    .badge-muted { background: #fef3c7; color: #92400e; } .badge-nolike { background: #fce7f3; color: #9d174d; }
+    .stat-card { transition: transform 0.15s; } .stat-card:active { transform: scale(0.97); }
+    .fade-out { opacity: 0; transform: scale(0.95); transition: all 0.3s; }
+    .action-sheet { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .action-sheet.hidden-sheet { transform: translateY(100%); }
+    /* Desktop sidebar */
+    @media (min-width: 769px) { .mobile-nav { display: none !important; } .mobile-header { display: none !important; } }
+    @media (max-width: 768px) {
+      .desktop-sidebar { display: none !important; }
+      main { margin-left: 0 !important; padding-bottom: 80px !important; }
+      .mobile-header { display: flex !important; }
+    }
+    /* Smooth card actions */
+    .card-action { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+    .post-card { box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 24px rgba(15,23,42,.04); }
+    .post-card:hover { box-shadow: 0 4px 24px rgba(66,96,137,.12); }
+    .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; max-width: 100%; }
+    @media (min-width: 640px) { .img-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+
+<body class="bg-surface font-body text-on-surface">
+
+<!-- Toast -->
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl text-sm font-bold shadow-lg pointer-events-none opacity-0 translate-y-[-20px]"></div>
+
+<!-- Connection Status -->
+<div id="connection-status" class="fixed top-0 left-0 w-full bg-blue-500 text-white text-center py-1.5 text-xs font-bold z-[100]">正在连接...</div>
+
+<div class="flex min-h-screen">
+
+  <!-- ===== Desktop Sidebar ===== -->
+  <aside class="desktop-sidebar w-60 bg-white border-r border-gray-100 flex flex-col fixed top-0 left-0 h-full z-50">
+    <div class="p-4 border-b border-gray-100">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-white text-lg">admin_panel_settings</span></div>
+        <div><div class="font-headline font-extrabold text-[13px]">校园便利盒</div><div class="text-[10px] text-gray-400">管理后台 v5.0</div></div>
+      </div>
+    </div>
+    <nav class="flex-1 p-2 space-y-0.5" id="desktop-nav">
+      <div class="nav-d active flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all hover:bg-gray-50" onclick="go('dashboard',this)">
+        <span class="material-symbols-outlined text-xl">dashboard</span>看板
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all hover:bg-gray-50" onclick="go('posts',this)">
+        <span class="material-symbols-outlined text-xl">dynamic_feed</span>帖子
+        <span id="dbadge-posts" class="ml-auto text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-full hidden">0</span>
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all hover:bg-gray-50" onclick="go('goods',this)">
+        <span class="material-symbols-outlined text-xl">storefront</span>集市
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all hover:bg-gray-50" onclick="go('users',this)">
+        <span class="material-symbols-outlined text-xl">group</span>用户
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all hover:bg-gray-50" onclick="go('reports',this)">
+        <span class="material-symbols-outlined text-xl">flag</span>举报
+        <span id="dbadge-reports" class="ml-auto text-[10px] bg-error text-white px-1.5 py-0.5 rounded-full hidden">0</span>
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all hover:bg-gray-50" onclick="go('comments',this)">
+        <span class="material-symbols-outlined text-xl">chat</span>评论
+      </div>
+    </nav>
+    <div class="p-3 border-t border-gray-100">
+      <button onclick="loadAllData()" class="w-full flex items-center justify-center gap-1.5 py-2 bg-gray-50 rounded-xl text-xs font-bold text-primary hover:bg-gray-100 transition active:scale-95">
+        <span class="material-symbols-outlined text-base">refresh</span>刷新
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== Mobile Header ===== -->
+  <div class="mobile-header hidden fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-xl border-b z-40 items-center justify-between px-4">
+    <span class="font-headline font-bold text-sm" id="mobile-title">数据看板</span>
+    <button onclick="loadAllData()" class="p-1.5 rounded-lg active:bg-gray-100"><span class="material-symbols-outlined text-xl text-primary">refresh</span></button>
+  </div>
+
+  <!-- ===== Mobile Bottom Nav ===== -->
+  <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl border-t z-40 flex items-center justify-around px-2 safe-area-inset-bottom" style="padding-bottom: env(safe-area-inset-bottom, 0);">
+    <button class="mnav active flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('dashboard',this)">
+      <span class="material-symbols-outlined text-xl">dashboard</span><span class="text-[10px] font-bold">看板</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('posts',this)">
+      <span class="material-symbols-outlined text-xl">dynamic_feed</span><span class="text-[10px] font-bold">帖子</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('goods',this)">
+      <span class="material-symbols-outlined text-xl">storefront</span><span class="text-[10px] font-bold">集市</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative" onclick="go('users',this)">
+      <span class="material-symbols-outlined text-xl">group</span><span class="text-[10px] font-bold">用户</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative" onclick="go('reports',this)">
+      <span class="material-symbols-outlined text-xl">flag</span><span class="text-[10px] font-bold">举报</span>
+      <span id="mbadge-reports" class="absolute -top-0.5 right-1 text-[9px] bg-error text-white w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('comments',this)">
+      <span class="material-symbols-outlined text-xl">chat</span><span class="text-[10px] font-bold">评论</span>
+    </button>
+  </nav>
+
+  <!-- ===== Main Content ===== -->
+  <main class="flex-1 md:ml-60 pt-14 md:pt-0">
+    <div class="max-w-5xl mx-auto p-3 md:p-6">
+
+      <!-- ====== 数据看板 ====== -->
+      <div id="panel-dashboard" class="panel active">
+        <h1 class="font-headline font-extrabold text-xl md:text-2xl mb-1">数据看板</h1>
+        <p class="text-on-surface-variant text-xs mb-5">实时监控运营数据</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-primary text-base">article</span><span class="text-[11px] text-gray-400">帖子</span></div>
+            <span id="stat-posts" class="text-2xl font-bold text-primary">-</span>
+            <div class="text-[10px] text-green-600 mt-0.5">今日 +<span id="stat-today-posts">0</span></div>
+          </div>
+          <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-indigo-600 text-base">group</span><span class="text-[11px] text-gray-400">用户</span></div>
+            <span id="stat-users" class="text-2xl font-bold">-</span>
+            <div class="text-[10px] text-green-600 mt-0.5">今日 +<span id="stat-today-users">0</span></div>
+          </div>
+          <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-error text-base">flag</span><span class="text-[11px] text-gray-400">待处理举报</span></div>
+            <span id="stat-reports" class="text-2xl font-bold text-error">-</span>
+          </div>
+          <div class="stat-card bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-emerald-600 text-base">chat_bubble</span><span class="text-[11px] text-gray-400">评论</span></div>
+            <span id="stat-comments" class="text-2xl font-bold text-emerald-700">-</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-base">schedule</span>最近帖子</h3>
+            <div id="recent-posts" class="space-y-2"><p class="text-xs text-gray-400 text-center py-4">加载中...</p></div>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-error text-base">warning</span>最新举报</h3>
+            <div id="recent-reports" class="space-y-2"><p class="text-xs text-gray-400 text-center py-4">加载中...</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== 帖子管理 ====== -->
+      <div id="panel-posts" class="panel">
+        <h1 class="font-headline font-extrabold text-xl mb-1">帖子管理</h1>
+        <p class="text-on-surface-variant text-xs mb-4">审核、下架、置顶帖子</p>
+        <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
+          <select id="post-status-filter" onchange="loadPosts()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0"><option value="">全部状态</option><option value="active">正常</option><option value="pending">待审核(视频)</option><option value="hidden">已下架</option><option value="deleted">已删除</option></select>
+          <select id="post-category-filter" onchange="loadPosts()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0 min-w-[120px]"><option value="">全部分类</option><option>找搭子</option><option>求助</option><option>树洞</option><option>校园生活</option><option>学术交流</option><option>失物招领</option><option>社团活动</option><option>其他</option></select>
+        </div>
+        <div class="relative mb-3">
+          <input id="post-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索帖子..." oninput="debounceSearch('post')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="posts-container" class="space-y-3"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 集市管理 ====== -->
+      <div id="panel-goods" class="panel">
+        <h1 class="font-headline font-extrabold text-xl mb-1">二手集市</h1>
+        <p class="text-on-surface-variant text-xs mb-4">审核、下架交易商品</p>
+        <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
+          <select id="goods-status-filter" onchange="loadGoods()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0"><option value="">全部状态</option><option value="active">正常</option><option value="hidden">已下架</option><option value="deleted">已删除</option></select>
+          <select id="goods-category-filter" onchange="loadGoods()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0"><option value="">全部分类</option><option>书籍</option><option>手机数码</option><option>电器</option><option>生活用品</option><option>美妆</option><option>男装</option><option>女装</option><option>医药</option><option>玩乐</option><option>车品</option><option>技能服务</option><option>虚拟产品</option><option>餐饮</option><option>其他</option></select>
+        </div>
+        <div class="relative mb-3">
+          <input id="goods-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索商品名称..." oninput="debounceSearch('goods')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="goods-container" class="space-y-3"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 用户管理 ====== -->
+      <div id="panel-users" class="panel">
+        <h1 class="font-headline font-extrabold text-xl mb-1">用户管理</h1>
+        <p class="text-on-surface-variant text-xs mb-4">查看信息 · 封禁/禁言 · 设管理员</p>
+        <div class="flex gap-2 mb-3">
+          <select id="user-status-filter" onchange="loadUsers()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white"><option value="">全部</option><option value="active">正常</option><option value="banned">已封禁</option></select>
+          <select id="user-role-filter" onchange="loadUsers()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white"><option value="">全部角色</option><option value="admin">管理员</option><option value="user">普通用户</option></select>
+        </div>
+        <div class="relative mb-3">
+          <input id="user-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索昵称、学院..." oninput="debounceSearch('user')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="users-container" class="space-y-2"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 举报处理 ====== -->
+      <div id="panel-reports" class="panel">
+        <div class="flex items-center justify-between mb-4">
+          <div><h1 class="font-headline font-extrabold text-xl mb-1">举报处理</h1><p class="text-on-surface-variant text-xs">审核举报，判定违规</p></div>
+          <select id="report-status-filter" onchange="loadReports()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white"><option value="pending">待处理</option><option value="">全部</option><option value="resolved">已处理</option><option value="dismissed">已驳回</option></select>
+        </div>
+        <div id="reports-container" class="space-y-3"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 评论管理 ====== -->
+      <div id="panel-comments" class="panel">
+        <h1 class="font-headline font-extrabold text-xl mb-1">评论管理</h1>
+        <p class="text-on-surface-variant text-xs mb-4">帖子评论与商品评论统一管理</p>
+        <div class="flex gap-2 mb-3">
+          <select id="comment-type-filter" onchange="loadComments()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white">
+            <option value="all">全部类型</option>
+            <option value="post">帖子评论</option>
+            <option value="market">商品评论</option>
+          </select>
+          <select id="comment-status-filter" onchange="loadComments()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white">
+            <option value="active">正常</option>
+            <option value="hidden">已隐藏</option>
+            <option value="deleted">已删除</option>
+            <option value="">全部状态</option>
+          </select>
+        </div>
+        <div class="relative mb-3">
+          <input id="comment-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索评论..." oninput="debounceSearch('comment')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="comments-container" class="space-y-2"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ===== Action Sheet (Mobile-friendly modal) ===== -->
+<div id="action-sheet-overlay" class="fixed inset-0 bg-black/40 z-[200] hidden" onclick="closeSheet()"></div>
+<div id="action-sheet" class="action-sheet hidden-sheet fixed bottom-0 left-0 right-0 z-[210] bg-white rounded-t-3xl max-h-[90vh] overflow-y-auto safe-area-inset-bottom" style="padding-bottom: env(safe-area-inset-bottom, 16px);">
+  <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2"></div>
+  <div id="action-sheet-content" class="px-5 pb-5"></div>
+</div>
+
+<script>
+// ============ 配置（与小程序 campus_treehole/app.js 中 CLOUD_ENV_ID 保持一致）============
+const CONFIG = {
+  CLOUD_ENV_ID: 'xyblh-5gb26qrnf9d30feb',
+  /** 与云函数环境变量一致：adminPanel、dbOperations 均需 ADMIN_WEB_SECRET。可在控制台配置，或在 campus_treehole 目录执行 npm run cloud:push-fn-env（读取 cloudbaserc.json） */
+  ADMIN_WEB_SECRET: ''
+};
+
+function hasAdminSecret() {
+  return typeof CONFIG.ADMIN_WEB_SECRET === 'string' && CONFIG.ADMIN_WEB_SECRET.length >= 8;
+}
+
+// ============ 初始化 ============
+const cloudApp = cloudbase.init({ env: CONFIG.CLOUD_ENV_ID });
+const db = cloudApp.database(); const _ = db.command;
+const auth = cloudApp.auth({ persistence: 'local' });
+
+let postsCache=[], goodsCache=[], usersCache=[], reportsCache=[], commentsCache=[];
+let searchTimer=null;
+const titles = { dashboard:'数据看板', posts:'帖子管理', goods:'集市管理', users:'用户管理', reports:'举报处理', comments:'评论管理' };
+
+async function callFn(name, data) {
+  const res = await cloudApp.callFunction({ name, data: data || {} });
+  return res && (res.result !== undefined ? res.result : res);
+}
+
+function isCloudPermissionDenied(errOrVal) {
+  const parts = []
+  if (errOrVal != null) {
+    if (typeof errOrVal === 'string') parts.push(errOrVal)
+    else {
+      try { parts.push(JSON.stringify(errOrVal)) } catch (e) { parts.push(String(errOrVal)) }
+      if (errOrVal.message) parts.push(String(errOrVal.message))
+      if (errOrVal.msg) parts.push(String(errOrVal.msg))
+    }
+  }
+  const s = parts.join(' ')
+  if (/PERMISSION_DENIED|Permission denied/i.test(s)) return true
+  if (/OPERATION_FAIL/i.test(s) && /PERMISSION|拒绝访问|无权/i.test(s)) return true
+  return false
+}
+
+async function adminCallViaDbOpsRelay(action, data) {
+  return callFn('dbOperations', {
+    action: 'callAdminPanel',
+    data: {
+      webSecret: CONFIG.ADMIN_WEB_SECRET,
+      adminAction: action,
+      adminData: data || {}
+    }
+  })
+}
+
+async function adminCall(action, data) {
+  // 有密钥时优先走 dbOperations（与 getTempFileUrls 同通道），避免 Web 端无权调用 adminPanel
+  if (hasAdminSecret()) {
+    try {
+      return await adminCallViaDbOpsRelay(action, data);
+    } catch (e) {
+      if (!isCloudPermissionDenied(e)) throw e;
+    }
+  }
+  const payload = { action, data: data || {} };
+  if (hasAdminSecret()) payload.webSecret = CONFIG.ADMIN_WEB_SECRET;
+  try {
+    const raw = await callFn('adminPanel', payload);
+    if (hasAdminSecret() && isCloudPermissionDenied(raw)) {
+      return await adminCallViaDbOpsRelay(action, data);
+    }
+    return raw;
+  } catch (e) {
+    if (hasAdminSecret() && isCloudPermissionDenied(e)) {
+      return await adminCallViaDbOpsRelay(action, data);
+    }
+    throw e;
+  }
+}
+
+function assertCloudOk(raw, fallbackMsg) {
+  if (!raw || Number(raw.code) !== 0) {
+    throw new Error((raw && raw.msg) || fallbackMsg || '请求失败');
+  }
+  return raw;
+}
+
+// 云端媒体：cloud:// 必须通过云函数换临时 HTTPS，Web 端 img 无法直接加载 cloud://
+async function translateMediaLinks(datalist) {
+  if(!datalist || datalist.length === 0) return;
+  const allMedia = new Set();
+  datalist.forEach(item => {
+    const add = (u) => { if (u && String(u).startsWith('cloud://')) allMedia.add(String(u)); };
+    add(item.avatar);
+    add(item.avatarUrl);
+    add(item.image);
+    if(item.images && Array.isArray(item.images)) item.images.forEach(add);
+    if(item.thumbImages && Array.isArray(item.thumbImages)) item.thumbImages.forEach(add);
+    if(item.videos && Array.isArray(item.videos)) item.videos.forEach(add);
+  });
+
+  const fileList = Array.from(allMedia);
+  if (fileList.length === 0) return;
+
+  const urlMap = {};
+  for (let i = 0; i < fileList.length; i += 50) {
+    const batch = fileList.slice(i, i + 50);
+    try {
+      const res = await callFn('dbOperations', { action: 'getTempFileUrls', data: { fileList: batch } });
+      const payload = res && (res.result !== undefined ? res.result : res);
+      const ok = payload && Number(payload.code) === 0;
+      const files = ok ? (payload.data || payload.fileList || []) : [];
+      if (!Array.isArray(files)) continue;
+      files.forEach((file) => {
+        const fid = file.fileID || file.fileId || file.FileID;
+        const u = file.tempFileURL || file.TempFileURL || file.download_url || file.download_URL;
+        if (fid && u) urlMap[fid] = u;
+      });
+    } catch (err) {
+      console.error('getTempFileUrls batch', i, err);
+    }
+  }
+
+  const mapOne = (u) => (u && urlMap[u]) ? urlMap[u] : u;
+  datalist.forEach((item) => {
+    if (item.avatar) item.avatar = mapOne(item.avatar);
+    if (item.avatarUrl) item.avatarUrl = mapOne(item.avatarUrl);
+    if (item.image) item.image = mapOne(item.image);
+    if (item.images && Array.isArray(item.images)) item.images = item.images.map(mapOne);
+    if (item.thumbImages && Array.isArray(item.thumbImages)) item.thumbImages = item.thumbImages.map(mapOne);
+    if (item.videos && Array.isArray(item.videos)) item.videos = item.videos.map(mapOne);
+  });
+}
+
+function openMediaUrl(encoded) {
+  try {
+    const u = decodeURIComponent(encoded);
+    if (u && /^https?:\/\//i.test(u)) window.open(u, '_blank', 'noopener');
+  } catch (e) { console.error(e); }
+}
+
+function copyPostId(id) {
+  const s = String(id);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(s).then(() => toast('已复制 ID', 'success')).catch(() => toast('复制失败', 'error'));
+  } else {
+    toast(s, 'success');
+  }
+}
+
+// Toast
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl text-sm font-bold shadow-lg pointer-events-none transition-all ${type==='error'?'bg-red-600 text-white':'bg-on-surface text-white'} opacity-100 translate-y-0`;
+  setTimeout(()=>{ el.classList.add('opacity-0','translate-y-[-20px]'); }, 2200);
+}
+
+function setStatus(t,c) { const el=document.getElementById('connection-status'); el.className=`fixed top-0 left-0 w-full text-white text-center py-1.5 text-xs font-bold z-[100] ${c}`; el.textContent=t; }
+function fmt(d) { if(!d)return'-'; const dt=new Date(d); if(isNaN(dt))return'-'; const p=n=>String(n).padStart(2,'0'); return `${dt.getMonth()+1}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`; }
+function esc(s) { if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+/** 用于 img/video src：不要用 esc()，否则 URL 里的 & 会被转成 &amp; 导致加载失败 */
+function attrUrl(s) {
+  if (s == null || s === '') return '';
+  return String(s).replace(/"/g, '&quot;').replace(/</g, '');
+}
+function postImageList(p) {
+  if (!p) return [];
+  const arr = Array.isArray(p.images) ? [...p.images] : [];
+  if (p.image && typeof p.image === 'string' && p.image.trim()) {
+    if (!arr.includes(p.image)) arr.unshift(p.image);
+  }
+  return arr.filter(Boolean);
+}
+
+function badge(status) {
+  const m = { active:['正常','badge-active'], banned:['已封禁','badge-banned'], deleted:['已删除','badge-deleted'],
+    hidden:['已下架','badge-deleted'], pending:['待处理','badge-pending'], resolved:['已处理','badge-resolved'],
+    dismissed:['已驳回','badge-dismissed'], admin:['管理员','badge-admin'], user:['用户','badge-active'],
+    muted:['禁言中','badge-muted'], nolike:['禁赞中','badge-nolike'] };
+  const [l,c] = m[status]||[status,'badge-active'];
+  return `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${c}">${l}</span>`;
+}
+
+async function safeUpdateWhere(collection, where, data) {
+  try {
+    await db.collection(collection).where(where).update(data);
+  } catch (e) {
+    const msg = String((e && e.message) || e || '');
+    if (!msg.includes('not exist')) throw e;
+  }
+}
+
+function reportTypeLabel(targetType) {
+  if (targetType === 'post') return '帖子';
+  if (targetType === 'comment') return '评论';
+  if (targetType === 'goods') return '商品';
+  if (targetType === 'market_comment' || targetType === 'goods_comment') return '商品评论';
+  if (targetType === 'user') return '用户';
+  return targetType || '未知类型';
+}
+
+function reportTargetCollection(targetType) {
+  if (targetType === 'post') return 'posts';
+  if (targetType === 'comment') return 'comments';
+  if (targetType === 'goods') return 'market_goods';
+  if (targetType === 'market_comment' || targetType === 'goods_comment') return 'market_comments';
+  if (targetType === 'user') return 'users';
+  return '';
+}
+
+async function fetchReportTargetSummary(targetType, targetId) {
+  const collection = reportTargetCollection(targetType);
+  if (!collection || !targetId) return { content: '(未知内容)', nickname: '' };
+  try {
+    const res = await db.collection(collection).doc(targetId).get();
+    const doc = (res && (res.data && res.data[0] ? res.data[0] : res.data)) || {};
+    if (collection === 'posts') return { content: doc.title || doc.content || '(帖子无内容)', nickname: doc.nickname || '' };
+    if (collection === 'comments') return { content: doc.content || '(评论无内容)', nickname: doc.nickname || '' };
+    if (collection === 'market_goods') return { content: doc.title || doc.description || '(商品无内容)', nickname: doc.nickname || '' };
+    if (collection === 'users') return { content: `用户：${doc.nickName || '未知'}${doc.college ? `（${doc.college}）` : ''}`, nickname: doc.nickName || '' };
+    return { content: doc.content || '(评论无内容)', nickname: doc.nickname || '' };
+  } catch (e) {
+    return { content: '(已删除)', nickname: '' };
+  }
+}
+
+// ============ 导航 ============
+function go(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  // Desktop nav
+  document.querySelectorAll('.nav-d').forEach(n=>n.classList.remove('active','bg-primary/10','text-primary','font-bold'));
+  document.querySelectorAll('.nav-d').forEach(n=>{ if(n===el)n.classList.add('active','bg-primary/10','text-primary','font-bold'); });
+  // Mobile nav
+  document.querySelectorAll('.mnav').forEach(n=>{ n.classList.remove('active','text-primary'); n.classList.add('text-gray-400'); });
+  if(el&&el.classList.contains('mnav')) { el.classList.add('active','text-primary'); el.classList.remove('text-gray-400'); }
+  const mt = document.getElementById('mobile-title'); if(mt) mt.textContent = titles[name]||'';
+  // Load data on first visit
+  if(name==='posts'&&postsCache.length===0) loadPosts();
+  if(name==='goods'&&goodsCache.length===0) loadGoods();
+  if(name==='users'&&usersCache.length===0) loadUsers();
+  if(name==='reports'&&reportsCache.length===0) loadReports();
+  if(name==='comments'&&commentsCache.length===0) loadComments();
+}
+
+// ============ Action Sheet ============
+function openSheet(html) {
+  document.getElementById('action-sheet-content').innerHTML = html;
+  document.getElementById('action-sheet-overlay').classList.remove('hidden');
+  requestAnimationFrame(()=>document.getElementById('action-sheet').classList.remove('hidden-sheet'));
+}
+function closeSheet() {
+  document.getElementById('action-sheet').classList.add('hidden-sheet');
+  setTimeout(()=>document.getElementById('action-sheet-overlay').classList.add('hidden'), 300);
+}
+
+// ============ 搜索防抖 ============
+function debounceSearch(type) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const input = document.getElementById(type + '-search');
+    const kw = (input && input.value ? input.value : '').toLowerCase().trim();
+    if (type === 'post') {
+      if (!kw) renderPosts(postsCache);
+      else renderPosts(postsCache.filter(p => (p.content || '').toLowerCase().includes(kw) || (p.nickname || '').toLowerCase().includes(kw) || (p.title || '').toLowerCase().includes(kw)));
+    }
+    if (type === 'goods') {
+      if (!kw) renderGoods(goodsCache);
+      else renderGoods(goodsCache.filter(g => (g.title || '').toLowerCase().includes(kw) || (g.description || '').toLowerCase().includes(kw) || (g.nickname || '').toLowerCase().includes(kw) || String(g.price || '').toLowerCase().includes(kw)));
+    }
+    if (type === 'user') {
+      if (!kw) renderUsers(usersCache);
+      else renderUsers(usersCache.filter(u => (u.nickName || '').toLowerCase().includes(kw) || (u.college || '').toLowerCase().includes(kw) || (u._openid || '').includes(kw)));
+    }
+    if (type === 'comment') {
+      if (!kw) renderComments(commentsCache);
+      else renderComments(commentsCache.filter(c => (c.content || '').toLowerCase().includes(kw) || (c.nickname || '').toLowerCase().includes(kw)));
+    }
+  }, 300);
+}
+
+// ============ 初始化 & 全局加载 ============
+async function initAdmin() {
+  try {
+    setStatus('正在连接...','bg-blue-500');
+    await auth.anonymousAuthProvider().signIn();
+    setStatus('已连接','bg-green-500');
+    if (!hasAdminSecret()) {
+      toast('未配置 CONFIG.ADMIN_WEB_SECRET：写操作将直连数据库。请在云函数 adminPanel 设置环境变量 ADMIN_WEB_SECRET 后在此页填写相同密钥。', 'error');
+    }
+    await loadAllData();
+    setTimeout(()=>{ document.getElementById('connection-status').style.display='none'; }, 1500);
+  } catch(e) { setStatus('连接失败: '+e.message,'bg-red-600'); }
+}
+async function loadAllData() { await Promise.all([loadDashboard(), loadPosts(), loadGoods(), loadUsers(), loadReports(), loadComments()]); }
+
+// ============ 数据看板 ============
+async function loadDashboard() {
+  try {
+    const ts = new Date(); ts.setHours(0,0,0,0);
+    let posts, users, comments, marketComments, todayP, todayU, pendingR;
+    if (hasAdminSecret()) {
+      const st = assertCloudOk(await adminCall('getStats'), '统计失败');
+      const d = st.data || {};
+      posts = { total: d.totalPosts };
+      users = { total: d.totalUsers };
+      comments = { total: d.postComments != null ? d.postComments : d.totalComments };
+      marketComments = { total: d.marketComments || 0 };
+      todayP = { total: d.todayPosts };
+      todayU = { total: d.todayUsers };
+      pendingR = { total: d.pendingReports };
+      document.getElementById('stat-comments').textContent = d.totalComments != null ? d.totalComments : ((comments.total||0) + (marketComments.total||0));
+    } else {
+      [posts,users,comments,marketComments,todayP,todayU,pendingR] = await Promise.all([
+        db.collection('posts').where({status:'active'}).count(), db.collection('users').count(),
+        db.collection('comments').where({status:'active'}).count(),
+        db.collection('market_comments').where({status:'active'}).count().catch(()=>({ total: 0 })),
+        db.collection('posts').where({status:'active',createTime:_.gte(ts)}).count(),
+        db.collection('users').where({createTime:_.gte(ts)}).count(),
+        db.collection('reports').where({status:'pending'}).count(),
+      ]);
+      document.getElementById('stat-comments').textContent=(comments.total||0) + (marketComments.total||0);
+    }
+    document.getElementById('stat-posts').textContent=posts.total;
+    document.getElementById('stat-users').textContent=users.total;
+    document.getElementById('stat-reports').textContent=pendingR.total;
+    document.getElementById('stat-today-posts').textContent=todayP.total;
+    document.getElementById('stat-today-users').textContent=todayU.total;
+    // Badges
+    ['dbadge-reports','mbadge-reports'].forEach(id=>{
+      const el=document.getElementById(id); if(!el)return;
+      if(pendingR.total>0){el.textContent=pendingR.total;el.classList.remove('hidden');}else el.classList.add('hidden');
+    });
+    // Recent
+    let rpData = [];
+    if (hasAdminSecret()) {
+      const r = assertCloudOk(await adminCall('getPosts', { page: 1, pageSize: 5, status: 'active' }), '加载最近帖子失败');
+      rpData = r.data || [];
+    } else {
+      const rp = await db.collection('posts').where({status:'active'}).orderBy('createTime','desc').limit(5).get();
+      rpData = rp.data || [];
+    }
+    await translateMediaLinks(rpData);
+    document.getElementById('recent-posts').innerHTML = rpData.length===0?'<p class="text-xs text-gray-400 text-center py-3">暂无</p>':rpData.map(p=>`
+      <div class="flex items-center gap-2.5 py-1.5 border-b border-gray-50 last:border-0">
+        <div class="w-7 h-7 rounded-full bg-gray-100 overflow-hidden flex-shrink-0"><img src="${attrUrl(p.avatar)}" class="w-full h-full object-cover" onerror="this.style.display='none'"/></div>
+        <div class="flex-1 min-w-0"><div class="text-[11px] font-bold truncate">${esc(p.nickname)}</div><p class="text-[10px] text-gray-500 truncate">${esc(p.content)}</p></div>
+        <span class="text-[9px] text-gray-300 flex-shrink-0">${fmt(p.createTime)}</span>
+      </div>`).join('');
+    let rrData = [];
+    if (hasAdminSecret()) {
+      const rr = assertCloudOk(await adminCall('getReports', { page: 1, pageSize: 5, status: 'pending' }), '加载举报失败');
+      rrData = rr.data || [];
+    } else {
+      const rr = await db.collection('reports').where({status:'pending'}).orderBy('createTime','desc').limit(5).get();
+      rrData = rr.data || [];
+    }
+    document.getElementById('recent-reports').innerHTML = rrData.length===0?'<p class="text-xs text-gray-400 text-center py-3">暂无待处理</p>':rrData.map(r=>`
+      <div class="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+        <div><span class="text-[11px] font-bold">${esc(r.reason)}</span><span class="text-[9px] text-gray-400 ml-1">${fmt(r.createTime)}</span></div>${badge(r.status)}
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ============ 帖子管理 ============
+async function loadPosts() {
+  const c=document.getElementById('posts-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('post-status-filter').value, cf=document.getElementById('post-category-filter').value;
+    let list = [];
+    if (hasAdminSecret()) {
+      const raw = assertCloudOk(await adminCall('getPosts', {
+        page: 1,
+        pageSize: 50,
+        status: sf || undefined,
+        category: cf || undefined,
+        excludeDeleted: !sf
+      }), '加载帖子失败');
+      list = raw.data || [];
+    } else {
+      let cond={};
+      if(sf) cond.status=sf; else cond.status=_.neq('deleted');
+      if(cf) cond.category=cf;
+      const res = await db.collection('posts').where(cond).orderBy('createTime','desc').limit(50).get();
+      list = res.data || [];
+    }
+    await translateMediaLinks(list);
+    postsCache=list; renderPosts(postsCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${e.message}</p>`; }
+}
+
+function renderPosts(posts) {
+  const c=document.getElementById('posts-container');
+  if(!posts.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无帖子</p>';return;}
+  c.innerHTML = posts.map(p=>{
+    const anon=p.isAnonymous;
+    const imgs = postImageList(p);
+    const vidList = Array.isArray(p.videos) ? p.videos.filter(Boolean) : [];
+    return `<div id="post-${p._id}" class="post-card bg-white rounded-2xl border border-slate-100/80 p-4 md:p-5 transition-all">
+      <div class="flex items-start gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full ${anon?'bg-violet-100':'bg-slate-100'} overflow-hidden flex-shrink-0 flex items-center justify-center ring-2 ring-white shadow-sm">
+          ${anon?'<span class="material-symbols-outlined text-violet-600 text-lg">masks</span>':`<img src="${attrUrl(p.avatar)}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined text-slate-400 text-lg\\'>person</span>'"/>`}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="font-headline font-bold text-sm text-slate-800">${esc(p.nickname||'未知')}</span>
+            ${p.isTop?'<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">置顶</span>':''}
+            ${badge(p.status||'active')}
+          </div>
+          <div class="text-[11px] text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
+            <span>${fmt(p.createTime)}</span><span class="text-slate-300">·</span><span class="text-primary/90 font-medium">${esc(p.category||'')}</span>
+            <button type="button" class="ml-auto text-[10px] text-slate-400 hover:text-primary font-mono" title="复制帖子 ID" onclick="copyPostId(${JSON.stringify(String(p._id))})">复制ID</button>
+          </div>
+        </div>
+      </div>
+      ${p.title?`<div class="font-headline font-bold text-sm text-slate-800 mb-1.5">${esc(p.title)}</div>`:''}
+      <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words line-clamp-6">${esc(p.content)}</p>
+      ${imgs.length > 0 ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wide">图片 ${imgs.length}</p><div class="img-grid">${imgs.map((img) => {
+        const safe = attrUrl(img);
+        const go = encodeURIComponent(img);
+        return `<div class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group">
+          <img src="${safe}" alt="" class="w-full h-full object-cover cursor-zoom-in group-hover:scale-[1.02] transition-transform" loading="lazy" referrerpolicy="no-referrer" onclick="openMediaUrl('${go}')"/>
+        </div>`;
+      }).join('')}</div><p class="text-[10px] text-slate-400 mt-1.5">点击图片可在新标签查看原图（临时链约 2 小时有效）</p></div>` : ''}
+      ${vidList.length > 0 ? `<div class="mt-3 space-y-2"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">视频</p>${vidList.map(vid => `<video src="${attrUrl(vid)}" controls class="w-full max-h-48 rounded-xl bg-black" preload="metadata"></video>`).join('')}</div>` : ''}
+      <div class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+        <span class="inline-flex items-center gap-1"><span class="text-red-400">❤️</span>${p.likes||0}</span>
+        <span class="inline-flex items-center gap-1"><span class="text-slate-400">💬</span>${p.comments||0}</span>
+        ${p.location?`<span class="truncate max-w-[200px]">📍 ${esc(p.location)}</span>`:''}
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4">
+        <button onclick="doPost('top','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl ${p.isTop?'bg-amber-50 text-amber-800 border border-amber-100':'bg-slate-50 text-slate-700 border border-slate-100'} active:scale-95">${p.isTop?'取消置顶':'置顶'}</button>
+        <button onclick="doPost('hide','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-orange-50 text-orange-700 border border-orange-100 active:scale-95">下架</button>
+        <button onclick="doPost('del','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-red-50 text-red-700 border border-red-100 active:scale-95">删除</button>
+        ${p.status==='hidden'?`<button onclick="doPost('restore','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 active:scale-95">恢复</button>`:''}
+        ${p.status==='pending'?`<button onclick="doPost('approve','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-sky-50 text-sky-800 border border-sky-100 active:scale-95">审核通过</button>`:''}
+      </div>
+    </div>`}).join('');
+}
+
+async function doPost(act,id) {
+  try {
+    if (hasAdminSecret()) {
+      if (act === 'top') {
+        const raw = assertCloudOk(await adminCall('toggleTopPost', { postId: id }), '置顶失败');
+        toast(raw.data && raw.data.isTop ? '已置顶' : '已取消置顶');
+      } else if (act === 'hide') {
+        assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'hidden' }), '下架失败');
+        toast('已下架'); animRm(id,'post');
+      } else if (act === 'del') {
+        assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'deleted' }), '删除失败');
+        toast('已删除'); animRm(id,'post');
+      } else if (act === 'restore' || act === 'approve') {
+        assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'active' }), '更新失败');
+        toast(act === 'approve' ? '已审核通过！前台可见' : '已恢复'); loadPosts();
+      }
+      if (act === 'top') loadPosts();
+      return;
+    }
+    if(act==='top') { const p=await db.collection('posts').doc(id).get(); const d=p.data[0]||p.data; await db.collection('posts').doc(id).update({isTop:!d.isTop}); toast(d.isTop?'已取消置顶':'已置顶'); loadPosts(); }
+    else if(act==='hide') { await db.collection('posts').doc(id).update({status:'hidden'}); toast('已下架'); animRm(id,'post'); }
+    else if(act==='del') { await db.collection('posts').doc(id).update({status:'deleted'}); toast('已删除'); animRm(id,'post'); }
+    else if(act==='restore') { await db.collection('posts').doc(id).update({status:'active'}); toast('已恢复'); loadPosts(); }
+    else if(act==='approve') { await db.collection('posts').doc(id).update({status:'active'}); toast('已审核通过！前台可见'); loadPosts(); }
+  } catch(e) { toast('失败: '+e.message,'error'); }
+}
+function animRm(id,pfx) { const el=document.getElementById(`${pfx}-${id}`); if(el){el.classList.add('fade-out');setTimeout(()=>el.remove(),300);} }
+
+// ============ 集市管理 ============
+async function loadGoods() {
+  const c=document.getElementById('goods-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('goods-status-filter').value, cf=document.getElementById('goods-category-filter').value;
+    let items = [];
+    if (hasAdminSecret()) {
+      const raw = assertCloudOk(await adminCall('getMarketGoodsList', { status: sf || undefined, category: cf || undefined }), '加载商品失败');
+      items = raw.data || [];
+    } else {
+      try {
+        const res = await callFn('dbOperations', { action: 'getAdminMarketGoods', data: { status: sf, category: cf } });
+        if(!res || Number(res.code) !== 0) throw new Error((res && res.msg) || '无数据');
+        items = res.data || [];
+      } catch (err) {
+        const msg = String((err && err.message) || err || '');
+        const shouldFallback =
+          msg.includes('getOpenid') ||
+          msg.includes('FUNCTIONS_EXECUTE_FAIL') ||
+          msg.includes('未授权访问') ||
+          msg.includes('anonymous');
+        if (!shouldFallback) throw err;
+        let cond = {};
+        if (sf) cond.status = sf; else cond.status = _.neq('deleted');
+        if (cf) cond.category = cf;
+        const fallbackRes = await db.collection('market_goods').where(cond).orderBy('createTime','desc').limit(50).get();
+        items = fallbackRes.data || [];
+      }
+    }
+    await translateMediaLinks(items);
+    goodsCache = items; renderGoods(goodsCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${e.message}</p>`; }
+}
+function renderGoods(goods) {
+  const c=document.getElementById('goods-container');
+  if(!goods.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无商品</p>';return;}
+  c.innerHTML = goods.map(g=>`
+    <div id="goods-${g._id}" class="post-card bg-white rounded-2xl border border-slate-100 p-4 flex gap-4">
+      <div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 ring-1 ring-slate-100"><img src="${attrUrl(g.images?g.images[0]:'')}" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'"/></div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-0.5"><span class="font-bold text-xs truncate">${esc(g.title)}</span>${badge(g.status)}</div>
+        <div class="text-[10px] text-gray-400 mb-1">${esc(g.category)} · ¥${g.price}</div>
+        <div class="flex gap-1">
+          <button onclick="doGoods('hide','${g._id}')" class="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-lg">下架</button>
+          <button onclick="doGoods('del','${g._id}')" class="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg">删除</button>
+          ${g.status==='hidden'?`<button onclick="doGoods('restore','${g._id}')" class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg">恢复</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function doGoods(act,id) {
+  try {
+    if (hasAdminSecret()) {
+      if (act === 'hide') {
+        assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'hidden' }), '下架失败');
+        toast('已下架'); animRm(id,'goods');
+      } else if (act === 'del') {
+        assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'deleted' }), '删除失败');
+        toast('已删除'); animRm(id,'goods');
+      } else if (act === 'restore') {
+        assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'active' }), '恢复失败');
+        toast('已恢复'); loadGoods();
+      }
+      return;
+    }
+    if(act==='hide') {
+      await db.collection('market_goods').doc(id).update({status:'hidden'});
+      toast('已下架');
+      animRm(id,'goods');
+    } else if(act==='del') {
+      await db.collection('market_goods').doc(id).update({status:'deleted', deleteTime:new Date()});
+      toast('已删除');
+      animRm(id,'goods');
+    } else if(act==='restore') {
+      await db.collection('market_goods').doc(id).update({status:'active'});
+      toast('已恢复');
+      loadGoods();
+    }
+  } catch(e) { toast('失败: '+e.message,'error'); }
+}
+
+// ============ 用户管理 ============
+async function loadUsers() {
+  const c=document.getElementById('users-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('user-status-filter').value;
+    const rf=document.getElementById('user-role-filter').value;
+    let list = [];
+    if (hasAdminSecret()) {
+      const raw = assertCloudOk(await adminCall('getUsers', {
+        page: 1,
+        pageSize: 50,
+        status: sf || undefined,
+        role: rf || undefined
+      }), '加载用户失败');
+      list = raw.data || [];
+    } else {
+      let cond={};
+      if(sf) cond.status=sf; if(rf) cond.role=rf;
+      const res = await db.collection('users').where(cond).orderBy('createTime','desc').limit(50).get();
+      list = res.data || [];
+    }
+    await translateMediaLinks(list);
+    usersCache=list; renderUsers(usersCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${e.message}</p>`; }
+}
+
+function renderUsers(users) {
+  const c=document.getElementById('users-container');
+  if(!users.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无用户</p>';return;}
+  c.innerHTML = users.map(u=>`
+    <div id="user-${u._id}" class="bg-white rounded-xl border border-gray-100 p-3.5 flex items-center gap-3 active:bg-gray-50 transition-all cursor-pointer" onclick="showUserSheet('${u._openid}')">
+      <div class="w-11 h-11 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+        <img src="${attrUrl(u.avatarUrl)}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-primary/10 flex items-center justify-center\\'><span class=\\'material-symbols-outlined text-primary text-lg\\'>person</span></div>'"/>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="font-bold text-xs">${esc(u.nickName||'未设置')}</span>${badge(u.status||'active')}${u.role==='admin'?badge('admin'):''}${u.isMuted?badge('muted'):''}${u.isLikeBanned?badge('nolike'):''}</div>
+        <div class="text-[10px] text-gray-400 truncate">${esc(u.college||'未设置')} · ${fmt(u.createTime)}</div>
+      </div>
+      <span class="material-symbols-outlined text-gray-300 text-lg flex-shrink-0">chevron_right</span>
+    </div>`).join('');
+}
+
+// 用户详情 Sheet
+async function showUserSheet(openid) {
+  openSheet('<p class="text-center py-8 text-gray-400 text-sm">加载中...</p>');
+  try {
+    const ur = await db.collection('users').where({_openid:openid}).get();
+    if(!ur.data.length){openSheet('<p class="text-center py-8 text-red-500">用户不存在</p>');return;}
+    const u=ur.data[0];
+    await translateMediaLinks([u]);
+    const [pc,fic,foc] = await Promise.all([
+      db.collection('posts').where({_openid:openid,status:'active'}).count(),
+      db.collection('follows').where({_openid:openid}).count(),
+      db.collection('follows').where({targetOpenid:openid}).count(),
+    ]);
+    const rp = await db.collection('posts').where({_openid:openid}).orderBy('createTime','desc').limit(3).get();
+
+    // Calculate ban expiry text
+    let banText = '';
+    if(u.status==='banned' && u.banExpiry) {
+      const exp = new Date(u.banExpiry);
+      if(exp > new Date()) banText = `封禁至 ${fmt(u.banExpiry)}`;
+      else banText = '封禁已过期';
+    } else if(u.status==='banned') { banText = '永久封禁'; }
+
+    openSheet(`
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 ring-2 ring-white shadow"><img src="${attrUrl(u.avatarUrl)}" class="w-full h-full object-cover" onerror="this.style.display='none'"/></div>
+        <div class="flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap mb-0.5"><span class="font-bold text-base">${esc(u.nickName||'未设置')}</span>${badge(u.status||'active')}${u.role==='admin'?badge('admin'):''}${u.isMuted?badge('muted'):''}${u.isLikeBanned?badge('nolike'):''}</div>
+          <div class="text-xs text-gray-500">${esc(u.college||'未设置')}</div>
+          <div class="text-[10px] text-gray-300 font-mono mt-0.5 truncate">${esc(u._openid)}</div>
+        </div>
+      </div>
+      ${u.bio?`<div class="bg-gray-50 rounded-xl p-3 mb-3 text-xs text-gray-600">${esc(u.bio)}</div>`:''}
+      ${u.tags&&u.tags.length?`<div class="flex flex-wrap gap-1 mb-3">${u.tags.map(t=>`<span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] rounded-full">${esc(t)}</span>`).join('')}</div>`:''}
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <div class="bg-gray-50 rounded-xl p-2.5 text-center"><div class="text-lg font-bold text-primary">${pc.total}</div><div class="text-[9px] text-gray-400">帖子</div></div>
+        <div class="bg-gray-50 rounded-xl p-2.5 text-center"><div class="text-lg font-bold">${fic.total}</div><div class="text-[9px] text-gray-400">关注</div></div>
+        <div class="bg-gray-50 rounded-xl p-2.5 text-center"><div class="text-lg font-bold">${foc.total}</div><div class="text-[9px] text-gray-400">粉丝</div></div>
+      </div>
+      <div class="text-[10px] text-gray-400 space-y-0.5 mb-4">
+        <div>注册: ${fmt(u.createTime)} · 最后登录: ${fmt(u.lastLoginTime)}</div>
+        ${banText?`<div class="text-red-500 font-bold">${banText}</div>`:''}
+        <div>隐私协议: ${u.agreedPrivacy?'<span class="text-green-600">已同意</span>':'<span class="text-orange-500">未同意</span>'}</div>
+      </div>
+      ${rp.data.length?`<div class="border-t pt-3 mb-4"><div class="text-[10px] font-bold text-gray-500 mb-2">最近帖子</div>${rp.data.map(p=>`<p class="text-[11px] text-gray-600 truncate py-1 border-b border-gray-50">${esc(p.content)}</p>`).join('')}</div>`:''}
+
+      <div class="font-bold text-xs text-gray-500 mb-2 mt-2">快捷操作</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        ${u.role!=='admin'
+          ?`<button onclick="doUser('setAdmin','${openid}')" class="card-action text-xs font-bold rounded-xl bg-purple-50 text-purple-600 active:scale-95">设为管理员</button>`
+          :`<button onclick="doUser('removeAdmin','${openid}')" class="card-action text-xs font-bold rounded-xl bg-gray-100 text-gray-600 active:scale-95">取消管理员</button>`}
+        ${u.isMuted
+          ?`<button onclick="doUser('unmute','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">解除禁言</button>`
+          :`<button onclick="doUser('mute','${openid}')" class="card-action text-xs font-bold rounded-xl bg-yellow-50 text-yellow-700 active:scale-95">禁止评论</button>`}
+        ${u.isLikeBanned
+          ?`<button onclick="doUser('unbanlike','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">恢复点赞</button>`
+          :`<button onclick="doUser('banlike','${openid}')" class="card-action text-xs font-bold rounded-xl bg-pink-50 text-pink-600 active:scale-95">禁止点赞</button>`}
+        ${u.status!=='banned'
+          ?`<button onclick="showBanOptions('${openid}','${esc(u.nickName)}')" class="card-action text-xs font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">封禁账号</button>`
+          :`<button onclick="doUser('unban','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">解除封禁</button>`}
+      </div>
+    `);
+  } catch(e) { openSheet(`<p class="text-center py-8 text-red-500">${e.message}</p>`); }
+}
+
+// 封禁时长选择
+function showBanOptions(openid, name) {
+  openSheet(`
+    <div class="text-center mb-4">
+      <span class="material-symbols-outlined text-red-500 text-4xl mb-2">gavel</span>
+      <div class="font-bold text-base">封禁【${esc(name||'此用户')}】</div>
+      <div class="text-xs text-gray-400 mt-1">选择封禁时长，封禁期间用户无法登录和发帖</div>
+    </div>
+    <div class="space-y-2">
+      <button onclick="doBan('${openid}',1)" class="w-full card-action rounded-xl bg-orange-50 text-orange-700 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">timer</span> 封禁 1 天
+      </button>
+      <button onclick="doBan('${openid}',7)" class="w-full card-action rounded-xl bg-orange-50 text-orange-700 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">date_range</span> 封禁 7 天
+      </button>
+      <button onclick="doBan('${openid}',30)" class="w-full card-action rounded-xl bg-red-50 text-red-600 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">event_busy</span> 封禁 30 天
+      </button>
+      <button onclick="doBan('${openid}',0)" class="w-full card-action rounded-xl bg-red-100 text-red-700 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">block</span> 永久封禁
+      </button>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div class="flex-1 flex items-center bg-gray-50 rounded-xl px-3" style="min-height:44px">
+          <span class="material-symbols-outlined text-base text-gray-400 mr-1.5">edit_calendar</span>
+          <input id="custom-ban-days" type="number" min="1" max="3650" placeholder="自定义天数" class="flex-1 bg-transparent text-sm outline-none border-none" style="min-height:40px" />
+          <span class="text-xs text-gray-400">天</span>
+        </div>
+        <button onclick="doCustomBan('${openid}')" class="card-action px-4 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 shrink-0" style="min-height:44px">封禁</button>
+      </div>
+      <button onclick="closeSheet()" class="w-full card-action rounded-xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 mt-2">取消</button>
+    </div>
+  `);
+}
+
+async function doBan(openid, days) {
+  try {
+    if (hasAdminSecret()) {
+      assertCloudOk(await adminCall('banUserDays', { targetOpenid: openid, days: days > 0 ? days : 0 }), '封禁失败');
+      closeSheet(); toast(days>0?`已封禁 ${days} 天`:'已永久封禁'); loadUsers(); loadDashboard();
+      return;
+    }
+    const update = { status:'banned', banTime:new Date() };
+    if(days>0) {
+      const expiry = new Date(); expiry.setDate(expiry.getDate()+days);
+      update.banExpiry = expiry;
+    } else { update.banExpiry = null; } // 永久
+    await db.collection('users').where({_openid:openid}).update(update);
+    await Promise.all([
+      safeUpdateWhere('posts', { _openid: openid, status: 'active' }, { status: 'hidden' }),
+      safeUpdateWhere('market_goods', { _openid: openid, status: 'active' }, { status: 'hidden' }),
+      safeUpdateWhere('comments', { _openid: openid, status: 'active' }, { status: 'hidden' }),
+      safeUpdateWhere('market_comments', { _openid: openid, status: 'active' }, { status: 'hidden' })
+    ]);
+    closeSheet(); toast(days>0?`已封禁 ${days} 天`:'已永久封禁'); loadUsers(); loadDashboard();
+  } catch(e) { toast('封禁失败: '+e.message,'error'); }
+}
+
+function doCustomBan(openid) {
+  const input = document.getElementById('custom-ban-days');
+  const days = parseInt(input?.value);
+  if (!days || days < 1 || days > 3650) {
+    toast('请输入 1~3650 之间的天数', 'error'); return;
+  }
+  doBan(openid, days);
+}
+
+async function doUser(act, openid) {
+  try {
+    if (hasAdminSecret()) {
+      if(act==='setAdmin') { assertCloudOk(await adminCall('setAdmin', { targetOpenid: openid }), '操作失败'); toast('已设为管理员'); }
+      else if(act==='removeAdmin') { assertCloudOk(await adminCall('removeAdmin', { targetOpenid: openid }), '操作失败'); toast('已取消管理员'); }
+      else if(act==='mute') { assertCloudOk(await adminCall('muteUser', { targetOpenid: openid }), '操作失败'); toast('已禁言'); }
+      else if(act==='unmute') { assertCloudOk(await adminCall('unmuteUser', { targetOpenid: openid }), '操作失败'); toast('已解除禁言'); }
+      else if(act==='banlike') { assertCloudOk(await adminCall('banLikeUser', { targetOpenid: openid }), '操作失败'); toast('已禁止点赞'); }
+      else if(act==='unbanlike') { assertCloudOk(await adminCall('unbanLikeUser', { targetOpenid: openid }), '操作失败'); toast('已恢复点赞'); }
+      else if(act==='unban') { assertCloudOk(await adminCall('unbanUser', { targetOpenid: openid }), '操作失败'); toast('已解封'); }
+      closeSheet(); loadUsers(); loadDashboard();
+      return;
+    }
+    if(act==='setAdmin') {
+      const ur = await db.collection('users').where({_openid:openid}).limit(1).get();
+      if (!ur.data.length) throw new Error('未找到该用户');
+      await db.collection('users').doc(ur.data[0]._id).update({
+        role: 'admin', status: 'active', banTime: null, banExpiry: null
+      });
+      toast('已设为管理员');
+    }
+    else if(act==='removeAdmin') {
+      const ur = await db.collection('users').where({_openid:openid}).limit(1).get();
+      if (!ur.data.length) throw new Error('未找到该用户');
+      await db.collection('users').doc(ur.data[0]._id).update({ role: 'user' });
+      toast('已取消管理员');
+    }
+    else if(act==='mute') { await db.collection('users').where({_openid:openid}).update({isMuted:true}); toast('已禁言'); }
+    else if(act==='unmute') { await db.collection('users').where({_openid:openid}).update({isMuted:false}); toast('已解除禁言'); }
+    else if(act==='banlike') { await db.collection('users').where({_openid:openid}).update({isLikeBanned:true}); toast('已禁止点赞'); }
+    else if(act==='unbanlike') { await db.collection('users').where({_openid:openid}).update({isLikeBanned:false}); toast('已恢复点赞'); }
+    else if(act==='unban') {
+      await db.collection('users').where({_openid:openid}).update({status:'active',banTime:null,banExpiry:null});
+      await Promise.all([
+        safeUpdateWhere('posts', { _openid: openid, status: 'hidden' }, { status: 'active' }),
+        safeUpdateWhere('market_goods', { _openid: openid, status: 'hidden' }, { status: 'active' }),
+        safeUpdateWhere('comments', { _openid: openid, status: 'hidden' }, { status: 'active' }),
+        safeUpdateWhere('market_comments', { _openid: openid, status: 'hidden' }, { status: 'active' })
+      ]);
+      toast('已解封');
+    }
+    closeSheet(); loadUsers(); loadDashboard();
+  } catch(e) { toast('操作失败: '+e.message,'error'); }
+}
+
+// ============ 举报管理 ============
+async function loadReports() {
+  const c=document.getElementById('reports-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('report-status-filter').value;
+    let rows = [];
+    if (hasAdminSecret()) {
+      const raw = assertCloudOk(await adminCall('getReports', { page: 1, pageSize: 50, status: sf || undefined }), '加载举报失败');
+      rows = raw.data || [];
+    } else {
+      let cond={};
+      if(sf) cond.status=sf;
+      const res = await db.collection('reports').where(cond).orderBy('createTime','desc').limit(50).get();
+      rows = res.data || [];
+    }
+    reportsCache=rows;
+    for(const r of reportsCache) {
+      if (hasAdminSecret() && r.targetContent != null) {
+        r._tc = r.targetContent;
+        r._tn = r.targetNickname || '';
+        r._typeLabel = reportTypeLabel(r.targetType);
+      } else {
+        const summary = await fetchReportTargetSummary(r.targetType, r.targetId);
+        r._tc = summary.content;
+        r._tn = summary.nickname;
+        r._typeLabel = reportTypeLabel(r.targetType);
+      }
+    }
+    renderReports(reportsCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${e.message}</p>`; }
+}
+
+function renderReports(reports) {
+  const c=document.getElementById('reports-container');
+  if(!reports.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无举报</p>';return;}
+  c.innerHTML = reports.map(r=>`
+    <div id="report-${r._id}" class="bg-white rounded-xl border ${r.status==='pending'?'border-orange-200':'border-gray-100'} p-4 transition-all">
+      <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-orange-500 text-base">flag</span><span class="font-bold text-xs">${esc(r.reason)}</span>${badge(r.status)}<span class="text-[9px] text-gray-400 ml-auto">${fmt(r.createTime)}</span></div>
+      <div class="bg-gray-50 rounded-lg p-2.5 mb-3">
+        <div class="text-[10px] text-gray-400 mb-0.5">${r._tn?`来自 ${esc(r._tn)}`:''} · ${esc(r._typeLabel || reportTypeLabel(r.targetType))}</div>
+        <p class="text-xs text-gray-700 line-clamp-3">${esc(r._tc||'')}</p>
+      </div>
+      ${r.status==='pending'?`<div class="flex gap-2">
+        <button onclick="doReport('${r._id}','resolved','${r.targetId}','${r.targetType}')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">违规删除</button>
+        <button onclick="doReport('${r._id}','dismissed')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-gray-50 text-gray-600 active:scale-95">驳回</button>
+      </div>`:''}
+    </div>`).join('');
+}
+
+async function doReport(rid, result, tid, ttype) {
+  try {
+    if (hasAdminSecret()) {
+      assertCloudOk(await adminCall('handleReport', { reportId: rid, result }), '处理失败');
+      toast(result==='resolved'?'已处理，内容已删除':'已驳回'); loadReports(); loadDashboard();
+      return;
+    }
+    await db.collection('reports').doc(rid).update({status:result,handleTime:new Date()});
+    if(result==='resolved'&&tid) {
+      const collection = reportTargetCollection(ttype);
+      if (collection) {
+        let targetDoc = null;
+        try {
+          const tr = await db.collection(collection).doc(tid).get();
+          targetDoc = (tr && (tr.data && tr.data[0] ? tr.data[0] : tr.data)) || null;
+        } catch (e) {}
+        const wasActive = !!(targetDoc && targetDoc.status === 'active');
+        const deleteData = collection === 'market_goods' ? { status: 'deleted', deleteTime: new Date() } : { status: 'deleted' };
+        if (!targetDoc || targetDoc.status !== 'deleted') {
+          await db.collection(collection).doc(tid).update(deleteData);
+        }
+        if (wasActive && collection === 'comments' && targetDoc && targetDoc.postId) {
+          try { await db.collection('posts').doc(targetDoc.postId).update({ comments: _.inc(-1) }); } catch (e) {}
+        }
+        if (wasActive && collection === 'market_comments' && targetDoc && targetDoc.goodsId) {
+          try { await db.collection('market_goods').doc(targetDoc.goodsId).update({ commentCount: _.inc(-1) }); } catch (e) {}
+        }
+      }
+    }
+    toast(result==='resolved'?'已处理，内容已删除':'已驳回'); loadReports(); loadDashboard();
+  } catch(e) { toast('处理失败','error'); }
+}
+
+// ============ 评论管理 ============
+async function loadComments() {
+  const c=document.getElementById('comments-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const typeFilter = (document.getElementById('comment-type-filter')?.value || 'all').trim();
+    const statusFilter = document.getElementById('comment-status-filter')?.value;
+
+    let list = [];
+    if (hasAdminSecret()) {
+      const raw = assertCloudOk(await adminCall('getCommentsAdmin', {
+        type: typeFilter,
+        ...(statusFilter ? { status: statusFilter } : {}),
+        limit: 100
+      }), '加载评论失败');
+      list = raw.data || [];
+    } else {
+      const cond = {};
+      if (statusFilter) cond.status = statusFilter;
+      if (typeFilter === 'post') {
+        const postRes = await db.collection('comments').where(cond).orderBy('createTime','desc').limit(80).get();
+        list = (postRes.data || []).map(item => ({ ...item, _commentType: 'post' }));
+      } else if (typeFilter === 'market') {
+        const marketRes = await db.collection('market_comments').where(cond).orderBy('createTime','desc').limit(80).get().catch(() => ({ data: [] }));
+        list = (marketRes.data || []).map(item => ({ ...item, _commentType: 'market' }));
+      } else {
+        const [postRes, marketRes] = await Promise.all([
+          db.collection('comments').where(cond).orderBy('createTime','desc').limit(60).get(),
+          db.collection('market_comments').where(cond).orderBy('createTime','desc').limit(60).get().catch(() => ({ data: [] }))
+        ]);
+        list = [
+          ...(postRes.data || []).map(item => ({ ...item, _commentType: 'post' })),
+          ...((marketRes.data || []).map(item => ({ ...item, _commentType: 'market' })))
+        ];
+        list.sort((a, b) => new Date(b.createTime || 0).getTime() - new Date(a.createTime || 0).getTime());
+        list = list.slice(0, 100);
+      }
+    }
+
+    await translateMediaLinks(list);
+    commentsCache=list; renderComments(commentsCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${e.message}</p>`; }
+}
+
+function renderComments(comments) {
+  const c=document.getElementById('comments-container');
+  if(!comments.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无评论</p>';return;}
+  c.innerHTML = comments.map(cc=>`
+    <div id="comment-${cc._id}" class="bg-white rounded-xl border border-gray-100 p-3.5 flex items-center gap-2.5 transition-all">
+      <div class="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex-shrink-0"><img src="${attrUrl(cc.avatar)}" class="w-full h-full object-cover" onerror="this.style.display='none'"/></div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-0.5">
+          <span class="font-bold text-[11px]">${esc(cc.nickname||'未知')}</span>
+          <span class="text-[9px] text-gray-300">${fmt(cc.createTime)}</span>
+          <span class="px-1.5 py-0.5 rounded-md text-[9px] ${cc._commentType==='market' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'}">${cc._commentType==='market' ? '商品评论' : '帖子评论'}</span>
+          ${badge(cc.status || 'active')}
+        </div>
+        <p class="text-xs text-gray-700 truncate">${esc(cc.content)}</p>
+      </div>
+      ${cc.status==='deleted'
+        ? `<span class="text-[10px] text-gray-400 px-2 py-1">已删除</span>`
+        : `<button onclick="doDelComment('${cc._id}','${cc.postId || cc.goodsId || ''}','${cc._commentType || 'post'}')" class="p-2 rounded-xl bg-red-50 text-red-500 active:scale-90 flex-shrink-0"><span class="material-symbols-outlined text-base">delete</span></button>`
+      }
+    </div>`).join('');
+}
+
+async function doDelComment(cid, parentId, commentType='post') {
+  try {
+    if (hasAdminSecret()) {
+      assertCloudOk(await adminCall('deleteCommentAdmin', {
+        commentId: cid,
+        scope: commentType === 'market' ? 'market' : 'post'
+      }), '删除失败');
+      toast('评论已删除'); animRm(cid,'comment');
+      return;
+    }
+    if (commentType === 'market') {
+      let current = null;
+      try {
+        const res = await db.collection('market_comments').doc(cid).get();
+        current = (res && (res.data && res.data[0] ? res.data[0] : res.data)) || null;
+      } catch (e) {}
+      await db.collection('market_comments').doc(cid).update({status:'deleted'});
+      const goodsId = parentId || (current && current.goodsId) || '';
+      if (goodsId && current && current.status === 'active') {
+        try { await db.collection('market_goods').doc(goodsId).update({commentCount:_.inc(-1)}); } catch (e) {}
+      }
+    } else {
+      let current = null;
+      try {
+        const res = await db.collection('comments').doc(cid).get();
+        current = (res && (res.data && res.data[0] ? res.data[0] : res.data)) || null;
+      } catch (e) {}
+      await db.collection('comments').doc(cid).update({status:'deleted'});
+      const postId = parentId || (current && current.postId) || '';
+      if (postId && current && current.status === 'active') {
+        try { await db.collection('posts').doc(postId).update({comments:_.inc(-1)}); } catch (e) {}
+      }
+    }
+    toast('评论已删除'); animRm(cid,'comment');
+  } catch(e) { toast('删除失败','error'); }
+}
+
+// ============ 启动 ============
+document.addEventListener('DOMContentLoaded', initAdmin);
+</script>
+</body>
+</html>
+

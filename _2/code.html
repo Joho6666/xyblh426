@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be_Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface": "#2c3338",
+              "secondary-container": "#d8e3f8",
+              "surface-container": "#e9eef3",
+              "primary": "#426089",
+              "surface-bright": "#f7f9fc",
+              "surface-container-low": "#f0f4f8",
+              "surface-container-high": "#e3e9ee",
+              "on-surface-variant": "#596065",
+              "on-primary-fixed": "#0c3157",
+              "tertiary-fixed-dim": "#cabded",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-dim": "#574d76",
+              "on-error": "#fff7f6",
+              "tertiary-container": "#d8cafc",
+              "surface-variant": "#dce3e9",
+              "on-primary-fixed-variant": "#2f4e76",
+              "on-tertiary": "#fdf7ff",
+              "inverse-surface": "#0b0f11",
+              "on-error-container": "#6e0a12",
+              "on-secondary": "#f8f8ff",
+              "on-primary-container": "#25456c",
+              "background": "#f7f9fc",
+              "on-background": "#2c3338",
+              "surface-tint": "#426089",
+              "secondary": "#556071",
+              "primary-fixed": "#afcefd",
+              "on-tertiary-fixed": "#382e55",
+              "surface-dim": "#d4dbe1",
+              "tertiary-fixed": "#d8cafc",
+              "primary-dim": "#35547d",
+              "surface-container-highest": "#dce3e9",
+              "secondary-dim": "#495465",
+              "inverse-primary": "#afcefd",
+              "secondary-fixed-dim": "#cad5ea",
+              "secondary-fixed": "#d8e3f8",
+              "on-tertiary-container": "#4b416a",
+              "surface": "#f7f9fc",
+              "error": "#a83836",
+              "primary-container": "#afcefd",
+              "on-secondary-fixed-variant": "#515c6e",
+              "on-tertiary-fixed-variant": "#554a74",
+              "on-secondary-container": "#475263",
+              "error-container": "#fa746f",
+              "on-primary": "#f8f8ff",
+              "outline": "#747c81",
+              "inverse-on-surface": "#9a9da0",
+              "tertiary": "#635983",
+              "on-secondary-fixed": "#354050",
+              "error-dim": "#67040d",
+              "primary-fixed-dim": "#a1c0ee",
+              "outline-variant": "#abb3b9"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Be Vietnam Pro"],
+              "label": ["Be Vietnam Pro"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f7f9fc;
+            color: #2c3338;
+        }
+        .editorial-shadow {
+            box-shadow: 0 12px 32px rgba(44, 51, 56, 0.06);
+        }
+        .tree-hole-bubble {
+            border-radius: 24px 24px 8px 24px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f7f9fc]/80 backdrop-blur-xl flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#2c3338] hover:bg-[#f0f4f8]/50 p-2 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-bold text-lg tracking-tight text-[#426089]">校园墙</h1>
+</div>
+<button class="text-[#2c3338] hover:bg-[#f0f4f8]/50 p-2 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+</button>
+</header>
+<main class="pt-20 px-4 max-w-3xl mx-auto space-y-6">
+<!-- Post Content Section -->
+<article class="bg-surface-container-lowest rounded-[1.5rem] p-6 editorial-shadow">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<img alt="Avatar" class="w-12 h-12 rounded-full object-cover" data-alt="Portrait of a young university student smiling, soft natural window lighting, clean minimal background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH47gT-RMe02U8C6f_9rsm_8fqRenFAx5cScdpmra2VD2siwumqfWpUfoJ8Ff_B-DBjF-JFX3cLwslBURt4xF-zJWgPOmalMNGWwzl9-aTFFcSyTVr0qD6D-2QmkDjN5VvRSLENtdy5lHh90yBAYrws3BHtcxtBu9z9rn3CYZirirtrcFCU5EE3QwrcBWS6WnK2DLJl8bcIMZeSSZV0qBgWQNPKkOeQIs8_p8DAwXNZxwEKuDYXGl_mjtEFye7ucCJMlRO5Ac5xDVe"/>
+<div>
+<h2 class="font-headline font-semibold text-on-surface">学长有点忙</h2>
+<p class="text-[0.75rem] text-outline-variant font-label">2小时前 · 计算机学院</p>
+</div>
+</div>
+<span class="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full text-[0.75rem] font-medium">树洞</span>
+</div>
+<div class="space-y-4">
+<p class="text-on-surface leading-relaxed font-body text-[1rem]">
+                    今天在图书馆五楼靠窗的位置捡到了一本《算法导论》，扉页上写着“祝你前程似锦”。这种浪漫的传递真的让人心里暖暖的。如果你是失主，或者认识这位同学，请私信我。
+                </p>
+<div class="rounded-[1.5rem] overflow-hidden">
+<img alt="Post Image" class="w-full h-64 object-cover" data-alt="Close-up of a thick textbook on a wooden library table, soft afternoon sunlight streaming through a window creating long shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBc5WsTCaN2jTGWu4uDo_i3D_szt2R2C9qh_U0yAAxMTtFOMPAC3NXAfpmSpy3t6GU15tW7YN6Hc7wAg6W_7FzSe5-asEsRpBiRBSm9oe-9hzIiqrPuuDbztrA3Dnveqr6654OHqI9P0lkCbnI8nNESxolJWEH_7MmRtnBJZOQu3YSz2nrcFhXYYyTwRo3HgdSG2ty1LQp-9d_PrleG0511b_ue3Cemq1Za2nPX60-CY9fPfLQNKJpskCcFOnxUCQWs3WJ75nnbrRI4"/>
+</div>
+</div>
+<!-- Interaction Buttons -->
+<div class="flex items-center justify-between mt-8 pt-6 border-t border-surface-container">
+<div class="flex items-center gap-6">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="favorite" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="text-[0.875rem] font-medium">128</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="share">share</span>
+<span class="text-[0.875rem] font-medium">分享</span>
+</button>
+</div>
+<button class="flex items-center gap-1 text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="report">report</span>
+<span class="text-[0.75rem] font-medium">举报</span>
+</button>
+</div>
+</article>
+<!-- Comments Section Header -->
+<section class="space-y-4">
+<div class="flex items-center justify-between px-2">
+<h3 class="font-headline font-bold text-lg text-on-surface">全部评论 <span class="text-outline-variant font-normal text-sm ml-1">(24)</span></h3>
+<div class="flex bg-surface-container-low p-1 rounded-full">
+<button class="px-4 py-1.5 text-[0.75rem] font-medium rounded-full bg-surface-container-lowest text-primary editorial-shadow">按热度</button>
+<button class="px-4 py-1.5 text-[0.75rem] font-medium rounded-full text-on-surface-variant">按时间</button>
+</div>
+</div>
+<!-- Comment List -->
+<div class="space-y-4">
+<!-- Comment Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 editorial-shadow">
+<div class="flex gap-3">
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="Portrait of a friendly young woman, bright natural lighting, soft blue background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC83iLKSnNMJuaN_kBK44lYXUM5rUbO3K39CHviCMRM07Tix8kPKJRfU-aaCwVcSNri8JFMoPgkIhHlnGpvRjSAJYINJjkmPkOh3PmYyoFNumROTXxWlxRmEMJBpGQf0YQzxiWkyZWMsNX9GRchaivXmEqFYYKnZWSESoXVzD54KTJ-SrxcPVkbJtqIZN-yHrVMDDSvBhB_CU08xDPBLVcNG8fJrAPWxe49R0lzVQ0jrsHGl9WevvRjViqzRix5Q3wmffHJQzvWgEJz"/>
+<div class="flex-1 space-y-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-semibold text-sm text-on-surface">代码诗人心</h4>
+<p class="text-[0.7rem] text-outline-variant">1小时前</p>
+</div>
+<button class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="thumb_up">thumb_up</span>
+<span class="text-[0.7rem]">32</span>
+</button>
+</div>
+<p class="text-sm text-on-surface leading-relaxed">我也在找这本书！原来被楼主捡到了，这种感觉太温暖了。</p>
+<button class="text-primary text-[0.75rem] font-semibold mt-1">回复</button>
+</div>
+</div>
+</div>
+<!-- Comment Item 2 (Nested Reply Style) -->
+<div class="bg-surface-container-lowest rounded-xl p-5 editorial-shadow">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-sm">
+                            校
+                        </div>
+<div class="flex-1 space-y-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-semibold text-sm text-on-surface">校园小助手</h4>
+<p class="text-[0.7rem] text-outline-variant">45分钟前</p>
+</div>
+<button class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="thumb_up">thumb_up</span>
+<span class="text-[0.7rem]">15</span>
+</button>
+</div>
+<p class="text-sm text-on-surface leading-relaxed">建议失主尽快到失物招领处备案哦，也可以关注我们的官号消息。</p>
+<!-- Reply bubble -->
+<div class="bg-surface-container-low rounded-lg p-3 mt-3">
+<p class="text-[0.8rem] text-on-surface-variant">
+<span class="font-semibold text-primary">学长有点忙:</span> 好的，如果今晚没人领我就送过去。
+                                </p>
+</div>
+<button class="text-primary text-[0.75rem] font-semibold mt-1">回复</button>
+</div>
+</div>
+</div>
+<!-- Comment Item 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 editorial-shadow">
+<div class="flex gap-3">
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="Young man profile picture, casual collegiate style, soft bokeh background of a campus setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoYbcuSkWLX7Ohh9GkAt_Fg68BhNNEKZPWgIFMEs9up_-XoJxWTVJr3eSr_Geke4wu_7Mf2t-jroQtRe_htnJ_Q1dnWFzkgEPl6tpwUsPTxcZpR2VJdnsO7jG24cF-QiNybHjVHHib8qY8fPw8HB5RDSgf_2OBQqiuBJG_fE0ahxIhKL7I-boFfPNAm7gwsBkXlR0otlqz3Qn3zGUGnXe7rk2BTwi6RfXJAoFhX8DAqcHSddhdGJidQuZtwvXm2rfvG9ZJ17eAsZ8n"/>
+<div class="flex-1 space-y-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-semibold text-sm text-on-surface">算法苦行僧</h4>
+<p class="text-[0.7rem] text-outline-variant">10分钟前</p>
+</div>
+<button class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="thumb_up">thumb_up</span>
+<span class="text-[0.7rem]">2</span>
+</button>
+</div>
+<div class="tree-hole-bubble bg-surface-container p-3 inline-block">
+<p class="text-sm text-on-surface">《算法导论》... 看到这几个字我头就开始疼了，但我还是想祝失主前程似锦。</p>
+</div>
+<div class="mt-1">
+<button class="text-primary text-[0.75rem] font-semibold">回复</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Sticky Input Bar -->
+<footer class="fixed bottom-0 left-0 w-full bg-[#f7f9fc]/80 backdrop-blur-xl px-4 pt-3 pb-8 z-50">
+<div class="max-w-3xl mx-auto flex items-center gap-3">
+<div class="flex-1 bg-surface-container-highest rounded-full px-4 py-2.5 flex items-center gap-3">
+<input class="bg-transparent border-none focus:ring-0 text-sm flex-1 text-on-surface placeholder:text-outline" placeholder="说点什么吧..." type="text"/>
+<div class="flex items-center gap-2 text-outline">
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]" data-icon="sentiment_satisfied">sentiment_satisfied</span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[22px]" data-icon="image">image</span>
+</button>
+</div>
+</div>
+<button class="w-10 h-10 bg-primary text-on-primary rounded-full flex items-center justify-center active:scale-90 duration-300 ease-out editorial-shadow">
+<span class="material-symbols-outlined text-[20px]" data-icon="send">send</span>
+</button>
+</div>
+</footer>
+</body></html>

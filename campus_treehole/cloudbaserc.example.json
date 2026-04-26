@@ -1,0 +1,21 @@
+{
+  "version": "2.0",
+  "envId": "你的云环境ID",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "adminPanel",
+      "timeout": 60,
+      "envVariables": {
+        "ADMIN_WEB_SECRET": "与 _1/admin.html 中 CONFIG.ADMIN_WEB_SECRET 完全一致"
+      }
+    },
+    {
+      "name": "dbOperations",
+      "timeout": 60,
+      "envVariables": {
+        "ADMIN_WEB_SECRET": "与 adminPanel 相同"
+      }
+    }
+  ]
+}

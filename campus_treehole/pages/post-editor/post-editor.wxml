@@ -1,0 +1,145 @@
+<!-- pages/post/post.wxml - 发帖页 -->
+<!-- 支持图片、视频、表情包、实况图片 -->
+
+<view class="page-container">
+  <view class="draft-banner" wx:if="{{draftStatus}}">
+    <text>{{draftStatus}}</text>
+  </view>
+
+  <view class="edit-mode-banner" wx:if="{{editMode}}">
+    <text>正在编辑已发布帖子，保存后会直接更新原内容。</text>
+  </view>
+
+  <!-- 分类选择区域 -->
+  <view class="section-header">
+    <text class="section-title">选择发布频道</text>
+    <text class="section-label">CATEGORY</text>
+  </view>
+
+  <!-- 分类网格 - 4列 -->
+  <view class="category-grid">
+    <view
+      class="category-item {{currentCategory === index ? 'category-item-active' : ''}}"
+      wx:for="{{categoryList}}"
+      wx:key="index"
+      bindtap="onSelectCategory"
+      data-index="{{index}}"
+    >
+      <image class="category-icon" src="{{item.icon}}" mode="aspectFit"></image>
+      <text class="category-name">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 内容输入区域 -->
+  <view class="card content-card">
+    <!-- 标题输入 -->
+    <input
+      class="title-input"
+      placeholder="给你的动态起个标题吧..."
+      value="{{title}}"
+      bindinput="onTitleInput"
+    />
+    <view class="divider"></view>
+    <!-- 正文输入 -->
+    <textarea
+      class="content-input"
+      placeholder="在这里分享你的校园见闻或心情..."
+      value="{{content}}"
+      bindinput="onContentInput"
+      auto-height
+      maxlength="1000"
+    ></textarea>
+
+    <!-- 媒体工具栏 -->
+    <view class="media-toolbar">
+      <view class="media-btn" bindtap="onChooseImage">
+        <image class="media-btn-icon" src="/images/icon_camera.png" mode="aspectFit"></image>
+        <text class="media-btn-text">图片</text>
+      </view>
+      <view class="media-btn" bindtap="onChooseVideo" wx:if="{{canPostVideo}}">
+        <image class="media-btn-icon" src="/images/icon_share.png" mode="aspectFit"></image>
+        <text class="media-btn-text">视频</text>
+      </view>
+      <view class="media-btn" bindtap="toggleEmojiPanel">
+        <image class="media-btn-icon" src="/images/icon_emoji.png" mode="aspectFit"></image>
+        <text class="media-btn-text">表情</text>
+      </view>
+    </view>
+
+    <!-- 已选图片预览区 -->
+    <view class="image-upload-area" wx:if="{{selectedImages.length > 0 || selectedImages.length < 9}}">
+      <!-- 已选图片 -->
+      <view class="upload-preview" wx:for="{{selectedImages}}" wx:key="index">
+        <image class="preview-img" src="{{item.path}}" mode="aspectFill" bindtap="onPreviewImage" data-index="{{index}}"></image>
+        <view class="remove-btn" catchtap="onRemoveImage" data-index="{{index}}">
+          <text class="remove-icon">×</text>
+        </view>
+      </view>
+      <!-- 添加更多图片按钮 -->
+      <view class="upload-btn" bindtap="onChooseImage" wx:if="{{selectedImages.length < 9 && selectedImages.length > 0}}">
+        <image class="upload-icon" src="/images/icon_camera.png" mode="aspectFit"></image>
+        <text class="upload-text">{{selectedImages.length}}/9</text>
+      </view>
+    </view>
+
+    <!-- 已选视频预览区 -->
+    <view class="video-upload-area" wx:if="{{selectedVideos.length > 0}}">
+      <view class="video-preview" wx:for="{{selectedVideos}}" wx:key="index">
+        <video
+          class="preview-video"
+          src="{{item.path}}"
+          poster="{{item.thumbPath}}"
+          controls
+          object-fit="contain"
+        ></video>
+        <view class="remove-btn video-remove-btn" catchtap="onRemoveVideo" data-index="{{index}}">
+          <text class="remove-icon">×</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 表情面板 -->
+  <view class="emoji-panel" wx:if="{{showEmojiPanel}}">
+    <view class="emoji-grid">
+      <text
+        class="emoji-item"
+        wx:for="{{emojiList}}"
+        wx:key="index"
+        bindtap="onSelectEmoji"
+        data-emoji="{{item}}"
+      >{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 社区规范提示 -->
+  <view class="policy-tip">
+    <text>发布内容请遵守</text>
+    <text class="policy-link">校园便利盒社区规范</text>
+    <text>。</text>
+    <text class="policy-sub">严禁发布违法、违规、谩骂及侵犯他人隐私的信息。</text>
+    <text class="policy-sub" style="color:#d97706; margin-top:4rpx;" wx:if="{{canPostVideo}}">⚠️ 视频存储限30MB/1分钟。包含短视频的动态将会在人工审核后展示。</text>
+    <text class="policy-sub" style="color:#64748b; margin-top:4rpx;" wx:elif="{{allowPostVideo}}">当前仅管理员可发布视频，普通用户仅支持图文动态。</text>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-action-bar">
+    <view class="bottom-left-actions">
+      <view class="bottom-small-btn" bindtap="onSaveDraft">
+        <image class="bottom-small-icon" src="/images/icon_draft.png" mode="aspectFit"></image>
+        <text class="bottom-small-text">{{draftButtonText}}</text>
+      </view>
+      <view class="bottom-small-btn" bindtap="toggleEmojiPanel">
+        <image class="bottom-small-icon" src="/images/icon_emoji.png" mode="aspectFit"></image>
+        <text class="bottom-small-text">表情</text>
+      </view>
+    </view>
+    <view class="publish-btn" bindtap="onPublish">
+      <text class="publish-text">{{publishButtonText}}</text>
+      <text class="publish-arrow">▸</text>
+    </view>
+  </view>
+
+  <!-- 底部占位 -->
+  <view style="height: 40rpx;"></view>
+</view>

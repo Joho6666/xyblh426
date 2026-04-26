@@ -1,0 +1,251 @@
+<!-- pages/login/login.wxml — 四季场景登录页 -->
+<view class="login-page season-{{season}} {{transitioning ? 'season-fade' : ''}}">
+
+  <!-- 背景渐变 -->
+  <view class="bg-layer"></view>
+
+  <!-- ===== 🌸 春天 · 桃花树 · 花园 · 蝴蝶 · 小猫 ===== -->
+  <view class="scene" wx:if="{{season === 'spring'}}">
+    <view class="sp-tree">
+      <view class="sp-trunk"></view>
+      <view class="sp-crown sp-cr1"></view>
+      <view class="sp-crown sp-cr2"></view>
+      <view class="sp-crown sp-cr3"></view>
+      <view class="sp-blossom sp-bl1"></view>
+      <view class="sp-blossom sp-bl2"></view>
+      <view class="sp-blossom sp-bl3"></view>
+      <view class="sp-blossom sp-bl4"></view>
+      <view class="sp-blossom sp-bl5"></view>
+    </view>
+    <view class="sp-petal sp-p1"></view>
+    <view class="sp-petal sp-p2"></view>
+    <view class="sp-petal sp-p3"></view>
+    <view class="sp-petal sp-p4"></view>
+    <view class="sp-petal sp-p5"></view>
+    <view class="sp-petal sp-p6"></view>
+    <view class="sp-petal sp-p7"></view>
+    <view class="sp-petal sp-p8"></view>
+    <view class="sp-petal sp-p9"></view>
+    <view class="sp-petal sp-p10"></view>
+    <view class="sp-petal sp-p11"></view>
+    <view class="sp-petal sp-p12"></view>
+    <view class="sp-garden"></view>
+    <view class="sp-grass"></view>
+    <view class="sp-fl sp-f1"></view>
+    <view class="sp-fl sp-f2"></view>
+    <view class="sp-fl sp-f3"></view>
+    <view class="sp-fl sp-f4"></view>
+    <view class="sp-fl sp-f5"></view>
+    <view class="sp-fl sp-f6"></view>
+    <view class="sp-fl sp-f7"></view>
+    <view class="sp-fl sp-f8"></view>
+    <view class="sp-bf sp-bf1"></view>
+    <view class="sp-bf sp-bf2"></view>
+    <view class="sp-bf sp-bf3"></view>
+    <view class="sp-sun-glow"></view>
+    <view class="sp-cat">
+      <view class="sp-cat-body"></view>
+      <view class="sp-cat-head">
+        <view class="sp-cat-ear sp-ear-l"></view>
+        <view class="sp-cat-ear sp-ear-r"></view>
+        <view class="sp-cat-eye sp-ce-l"></view>
+        <view class="sp-cat-eye sp-ce-r"></view>
+        <view class="sp-cat-nose"></view>
+        <view class="sp-cat-whisker sp-wh1"></view>
+        <view class="sp-cat-whisker sp-wh2"></view>
+        <view class="sp-cat-whisker sp-wh3"></view>
+        <view class="sp-cat-whisker sp-wh4"></view>
+      </view>
+      <view class="sp-cat-tail"></view>
+    </view>
+  </view>
+
+  <!-- ===== ☀️ 夏天 · 大海 · 沙滩 · 海鸥 · 鱼蟹 ===== -->
+  <view class="scene" wx:if="{{season === 'summer'}}">
+    <view class="sm-sun"></view>
+    <view class="sm-cloud sm-c1"></view>
+    <view class="sm-cloud sm-c2"></view>
+    <view class="sm-gull sm-g1"></view>
+    <view class="sm-gull sm-g2"></view>
+    <view class="sm-gull sm-g3"></view>
+    <view class="sm-sea"></view>
+    <view class="sm-wave sm-w1"></view>
+    <view class="sm-wave sm-w2"></view>
+    <view class="sm-wave sm-w3"></view>
+    <view class="sm-beach"></view>
+    <view class="sm-person">
+      <view class="sm-towel"></view>
+      <view class="sm-pbody"></view>
+      <view class="sm-phead"></view>
+    </view>
+    <view class="sm-star"></view>
+    <view class="sm-crab"></view>
+    <view class="sm-fish"></view>
+    <view class="sm-sea-glint"></view>
+    <view class="sm-sailboat">
+      <view class="sm-boat-mast"></view>
+      <view class="sm-boat-sail sm-sail-main"></view>
+      <view class="sm-boat-sail sm-sail-jib"></view>
+      <view class="sm-boat-hull"></view>
+    </view>
+    <view class="sm-foam sm-fm1"></view>
+    <view class="sm-foam sm-fm2"></view>
+    <view class="sm-foam sm-fm3"></view>
+  </view>
+
+  <!-- ===== 🍂 秋天 · 枫树 · 落叶 · 马路 · 骑车人 ===== -->
+  <view class="scene" wx:if="{{season === 'autumn'}}">
+    <view class="au-tree">
+      <view class="au-trunk"></view>
+      <view class="au-crown au-cr1"></view>
+      <view class="au-crown au-cr2"></view>
+      <view class="au-crown au-cr3"></view>
+    </view>
+    <view class="au-leaf au-l1"></view>
+    <view class="au-leaf au-l2"></view>
+    <view class="au-leaf au-l3"></view>
+    <view class="au-leaf au-l4"></view>
+    <view class="au-leaf au-l5"></view>
+    <view class="au-leaf au-l6"></view>
+    <view class="au-leaf au-l7"></view>
+    <view class="au-leaf au-l8"></view>
+    <view class="au-leaf au-l9"></view>
+    <view class="au-leaf au-l10"></view>
+    <view class="au-ground"></view>
+    <view class="au-road"></view>
+    <view class="au-road-line"></view>
+    <view class="au-biker">
+      <view class="au-bk-whl au-bk-wf"></view>
+      <view class="au-bk-whl au-bk-wr"></view>
+      <view class="au-bk-body"></view>
+      <view class="au-bk-head"></view>
+    </view>
+    <view class="au-gl au-gl1"></view>
+    <view class="au-gl au-gl2"></view>
+    <view class="au-gl au-gl3"></view>
+    <view class="au-hill"></view>
+  </view>
+
+  <!-- ===== ❄️ 冬天 · 雪花 · 雪山 · 雪人 · 北极熊 · 小屋 ===== -->
+  <view class="scene" wx:if="{{season === 'winter'}}">
+    <view class="wt-sun"></view>
+    <view class="wt-snow wt-s1"></view>
+    <view class="wt-snow wt-s2"></view>
+    <view class="wt-snow wt-s3"></view>
+    <view class="wt-snow wt-s4"></view>
+    <view class="wt-snow wt-s5"></view>
+    <view class="wt-snow wt-s6"></view>
+    <view class="wt-snow wt-s7"></view>
+    <view class="wt-snow wt-s8"></view>
+    <view class="wt-snow wt-s9"></view>
+    <view class="wt-snow wt-s10"></view>
+    <view class="wt-snow wt-s11"></view>
+    <view class="wt-snow wt-s12"></view>
+    <view class="wt-mtn wt-m1"></view>
+    <view class="wt-mtn wt-m2"></view>
+    <view class="wt-mtn-cap wt-mc1"></view>
+    <view class="wt-mtn-cap wt-mc2"></view>
+    <view class="wt-ground"></view>
+    <view class="wt-snowman">
+      <view class="wt-sm-bot"></view>
+      <view class="wt-sm-top"></view>
+      <view class="wt-sm-hat"></view>
+      <view class="wt-sm-nose"></view>
+      <view class="wt-sm-scarf"></view>
+    </view>
+    <view class="wt-bear">
+      <view class="wt-br-body"></view>
+      <view class="wt-br-head"></view>
+    </view>
+    <view class="wt-cabin">
+      <view class="wt-cb-wall"></view>
+      <view class="wt-cb-roof"></view>
+      <view class="wt-cb-win wt-cw1"></view>
+      <view class="wt-cb-win wt-cw2"></view>
+      <view class="wt-cb-door"></view>
+      <view class="wt-cb-chimney"></view>
+      <view class="wt-cb-smoke wt-sk1"></view>
+      <view class="wt-cb-smoke wt-sk2"></view>
+      <view class="wt-cb-smoke wt-sk3"></view>
+    </view>
+  </view>
+
+  <!-- ===== 前景内容 ===== -->
+  <view class="login-content">
+    <view class="season-indicator">
+      <text class="season-dot {{season === 'spring' ? 'dot-active' : ''}}">春</text>
+      <text class="season-dot {{season === 'summer' ? 'dot-active' : ''}}">夏</text>
+      <text class="season-dot {{season === 'autumn' ? 'dot-active' : ''}}">秋</text>
+      <text class="season-dot {{season === 'winter' ? 'dot-active' : ''}}">冬</text>
+    </view>
+
+    <view class="login-header">
+      <view class="logo-ring">
+        <view class="logo-inner">
+          <image class="login-logo-img" src="/images/logo_campus_box.png" mode="aspectFill"></image>
+        </view>
+      </view>
+      <text class="login-title">{{seasonEmoji}} 校园便利盒 {{seasonEmoji}}</text>
+      <text class="login-subtitle">{{seasonText}}</text>
+    </view>
+
+    <view class="login-form-card">
+      <view class="login-form">
+        <view wx:if="{{quickWelcome}}" class="login-quick-hint">
+          <text>欢迎回来，资料已为你保留，点下方按钮即可进入首页。</text>
+        </view>
+        <view class="avatar-section">
+          <view class="avatar-stack">
+            <view class="avatar-ring">
+              <image class="avatar-preview" src="{{avatarUrl}}" mode="aspectFill"></image>
+            </view>
+            <button
+              class="avatar-hit"
+              plain="{{true}}"
+              hover-class="none"
+              open-type="chooseAvatar"
+              bindchooseavatar="onChooseAvatar"
+            ></button>
+          </view>
+          <view class="avatar-edit-badge">
+            <text>点击选择头像</text>
+          </view>
+        </view>
+
+        <view class="nickname-section">
+          <text class="form-label">设置昵称</text>
+          <input
+            class="nickname-input"
+            type="nickname"
+            placeholder="请输入你的昵称"
+            value="{{nickName}}"
+            bindinput="onNicknameInput"
+            maxlength="20"
+          />
+        </view>
+
+        <view class="login-terms-row" wx:if="{{!canQuickEnter}}">
+          <checkbox-group bindchange="onTermsChange">
+            <label class="terms-label">
+              <checkbox value="agree" color="#426089" />
+              <text class="terms-text">我已阅读并同意</text>
+              <text class="terms-link" catchtap="onPrivacyTap">《用户协议与隐私政策》</text>
+            </label>
+          </checkbox-group>
+        </view>
+
+        <view class="login-btn {{logging ? 'btn-loading' : ''}}" bindtap="onLogin">
+          <text>{{logging ? '登录中...' : '进入校园便利盒'}}</text>
+        </view>
+
+        <view class="skip-btn" bindtap="onSkip">
+          <text>先逛逛，稍后设置</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="login-footer">
+    <text class="footer-link" bindtap="onPrivacyTap">查看《用户协议与隐私政策》全文</text>
+  </view>
+</view>

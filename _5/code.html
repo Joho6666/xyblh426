@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-highest": "#dce3e9",
+              "background": "#f7f9fc",
+              "surface-tint": "#426089",
+              "on-secondary-fixed-variant": "#515c6e",
+              "on-tertiary-fixed-variant": "#554a74",
+              "on-primary-fixed-variant": "#2f4e76",
+              "inverse-on-surface": "#9a9da0",
+              "secondary-container": "#d8e3f8",
+              "surface-dim": "#d4dbe1",
+              "outline-variant": "#abb3b9",
+              "tertiary-fixed-dim": "#cabded",
+              "surface-variant": "#dce3e9",
+              "on-background": "#2c3338",
+              "surface-container-low": "#f0f4f8",
+              "primary-fixed-dim": "#a1c0ee",
+              "secondary": "#556071",
+              "on-surface-variant": "#596065",
+              "primary-fixed": "#afcefd",
+              "primary-dim": "#35547d",
+              "on-secondary-container": "#475263",
+              "primary": "#426089",
+              "error": "#a83836",
+              "on-surface": "#2c3338",
+              "secondary-fixed-dim": "#cad5ea",
+              "on-error": "#fff7f6",
+              "surface-container-high": "#e3e9ee",
+              "inverse-surface": "#0b0f11",
+              "tertiary": "#635983",
+              "on-error-container": "#6e0a12",
+              "on-tertiary-fixed": "#382e55",
+              "tertiary-container": "#d8cafc",
+              "outline": "#747c81",
+              "surface-container": "#e9eef3",
+              "tertiary-dim": "#574d76",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed": "#d8cafc",
+              "on-tertiary": "#fdf7ff",
+              "on-primary": "#f8f8ff",
+              "surface-bright": "#f7f9fc",
+              "on-tertiary-container": "#4b416a",
+              "secondary-dim": "#495465",
+              "error-container": "#fa746f",
+              "primary-container": "#afcefd",
+              "surface": "#f7f9fc",
+              "on-secondary-fixed": "#354050",
+              "on-primary-container": "#25456c",
+              "on-secondary": "#f8f8ff",
+              "error-dim": "#67040d",
+              "secondary-fixed": "#d8e3f8",
+              "inverse-primary": "#afcefd",
+              "on-primary-fixed": "#0c3157"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Be Vietnam Pro"],
+              "label": ["Be Vietnam Pro"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<h1 class="font-headline font-extrabold tracking-tight text-lg text-blue-800">校园墙</h1>
+<div class="flex items-center gap-2">
+<button class="bg-primary text-on-primary px-5 py-1.5 rounded-full font-headline font-bold text-sm active:scale-95 transition-transform duration-200">
+                发布
+            </button>
+</div>
+</header>
+<main class="pt-20 px-4 max-w-2xl mx-auto space-y-6">
+<!-- Category Selection Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between px-2">
+<h2 class="font-headline font-bold text-on-surface-variant text-sm tracking-wide">选择发布频道</h2>
+<span class="text-[10px] text-outline font-medium uppercase tracking-widest">Category</span>
+</div>
+<!-- Bento Grid style Category Selector -->
+<div class="grid grid-cols-4 gap-3">
+<!-- Active Category -->
+<button class="col-span-1 aspect-square bg-primary-container text-on-primary-container rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 shadow-sm border-2 border-primary/10">
+<span class="material-symbols-outlined text-2xl" data-icon="diversity_3" style="font-variation-settings: 'FILL' 1;">diversity_3</span>
+<span class="font-label text-xs font-semibold">找搭子</span>
+</button>
+<button class="col-span-1 aspect-square bg-surface-container-lowest text-on-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label text-xs font-medium">闲置交易</span>
+</button>
+<button class="col-span-1 aspect-square bg-tertiary-container text-on-tertiary-container rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 shadow-sm">
+<span class="material-symbols-outlined text-2xl" data-icon="visibility_off" style="font-variation-settings: 'FILL' 1;">visibility_off</span>
+<span class="font-label text-xs font-medium">树洞</span>
+</button>
+<button class="col-span-1 aspect-square bg-surface-container-lowest text-on-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl" data-icon="school">school</span>
+<span class="font-label text-xs font-medium">校园生活</span>
+</button>
+<button class="col-span-1 aspect-square bg-surface-container-lowest text-on-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl" data-icon="menu_book">menu_book</span>
+<span class="font-label text-xs font-medium">学习研究</span>
+</button>
+<button class="col-span-1 aspect-square bg-surface-container-lowest text-on-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl" data-icon="favorite">favorite</span>
+<span class="font-label text-xs font-medium">情感话题</span>
+</button>
+<button class="col-span-1 aspect-square bg-surface-container-lowest text-on-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl" data-icon="help_center">help_center</span>
+<span class="font-label text-xs font-medium">求助</span>
+</button>
+<button class="col-span-1 aspect-square bg-surface-container-lowest text-on-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200 hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl" data-icon="work">work</span>
+<span class="font-label text-xs font-medium">兼职</span>
+</button>
+</div>
+</section>
+<!-- Main Content Input -->
+<section class="bg-surface-container-lowest rounded-[2rem] p-6 space-y-4 shadow-sm">
+<input class="w-full bg-transparent border-none focus:ring-0 font-headline font-bold text-xl text-on-surface placeholder:text-outline/50 p-0" placeholder="给你的动态起个标题吧..." type="text"/>
+<div class="w-full h-px bg-surface-container"></div>
+<textarea class="w-full min-h-[200px] bg-transparent border-none focus:ring-0 font-body text-on-surface-variant placeholder:text-outline/40 p-0 leading-relaxed resize-none" placeholder="在这里分享你的校园见闻或心情..."></textarea>
+<!-- Image Upload Placeholder -->
+<div class="flex gap-3 overflow-x-auto hide-scrollbar py-2">
+<button class="flex-shrink-0 w-24 h-24 rounded-2xl border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-outline-variant hover:border-primary/50 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-3xl" data-icon="add_a_photo">add_a_photo</span>
+<span class="text-[10px] font-bold mt-1">添加图片</span>
+</button>
+<div class="flex-shrink-0 w-24 h-24 rounded-2xl bg-surface-container overflow-hidden group relative">
+<img class="w-full h-full object-cover" data-alt="vibrant campus scene with modern university library building and students walking under sunlit green trees" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV0A1UF18ljrow3pQTvObhv3Y5_8Nr9j0kL3qSmcbIf-mknsPtXL_pT3CkR-G_uQ3XAm_tHwfZ2MWEKuP7uAKiekvCr7YqfACpCZlt6vNjIiRWuygJXAPFlNEkm97wa60L0-0QailbHlVheE6Tom0bmVLBpItqFXYQEQVdmcRhecLABCevhZmJJcC_B7d2nDnWh5G-bTcqShImkW1rWgDNlrlf5pD4W32lLb3otCAwaK5pb6idA17SawnMB-cUVe5f--OGeb1h1SKi"/>
+<button class="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 backdrop-blur-sm">
+<span class="material-symbols-outlined text-sm" data-icon="close">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Settings Section -->
+<section class="space-y-3">
+<div class="bg-surface-container-low rounded-2xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined" data-icon="visibility_off" style="font-variation-settings: 'FILL' 1;">visibility_off</span>
+</div>
+<div>
+<p class="font-headline font-bold text-on-surface text-sm">匿名发布</p>
+<p class="font-label text-xs text-on-surface-variant">启用后将不会显示你的个人信息</p>
+</div>
+</div>
+<!-- Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+</div>
+<div>
+<p class="font-headline font-bold text-on-surface text-sm">添加地点</p>
+<p class="font-label text-xs text-on-surface-variant">展示你的当前位置</p>
+</div>
+</div>
+<button class="text-primary font-label text-xs font-bold px-3 py-1 rounded-full bg-primary/10">点击添加</button>
+</div>
+</section>
+<!-- Privacy & Policy Tip -->
+<p class="text-center text-[11px] text-outline font-medium px-8 leading-relaxed">
+            发布内容请遵守 <span class="text-primary underline">校园墙社区规范</span>。<br/>严禁发布违法、违规、谩骂及侵犯他人隐私的信息。
+        </p>
+</main>
+<!-- BottomNavBar (Suppressed for focused task screen, but showing a persistent action bar instead as per design system pivot) -->
+<div class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-xl px-6 pb-10 pt-4 flex items-center justify-between border-t border-surface-container-highest/10 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+<div class="flex gap-4">
+<button class="text-on-surface-variant flex flex-col items-center gap-1 active:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="draft">draft</span>
+<span class="text-[10px] font-bold">存草稿</span>
+</button>
+<button class="text-on-surface-variant flex flex-col items-center gap-1 active:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px] font-bold">设置</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary px-10 py-3 rounded-full font-headline font-extrabold shadow-lg shadow-primary/20 flex items-center gap-2 active:scale-95 transition-all">
+<span>立即发布</span>
+<span class="material-symbols-outlined text-lg" data-icon="send">send</span>
+</button>
+</div>
+</body></html>

@@ -1,0 +1,34 @@
+<view class="page">
+  <view class="tip" wx:if="{{!loading && list.length === 0}}">
+    <text>暂无员工数据。请在云开发数据库新建集合 employees，并添加文档（empId、name、inviteCode、status 等）。</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+
+  <view class="card" wx:for="{{list}}" wx:key="empId">
+    <view class="row title-row">
+      <text class="name">{{item.name || '未命名'}}</text>
+      <text class="badge">{{item.status === 'enabled' ? '启用' : '停用'}}</text>
+    </view>
+    <view class="row"><text class="k">员工编号</text><text class="v">{{item.empId}}</text></view>
+    <view class="row"><text class="k">邀请码</text><text class="v">{{item.inviteCode || '—'}}</text></view>
+    <view class="row stats">
+      <text>成功邀请 <text class="num">{{item.inviteCount}}</text> 人</text>
+      <text class="sep">｜</text>
+      <text>扫码记录 <text class="num">{{item.referralScanCount}}</text> 次</text>
+    </view>
+    <view class="qr-wrap" wx:if="{{item.qrcodeDisplayUrl}}">
+      <image class="qr" src="{{item.qrcodeDisplayUrl}}" mode="aspectFit" show-menu-by-longpress />
+    </view>
+    <view class="qr-missing" wx:else><text>尚未生成小程序码</text></view>
+    <button
+      class="btn-gen"
+      size="mini"
+      type="default"
+      loading="{{generatingEmpId === item.empId}}"
+      disabled="{{generatingEmpId !== ''}}"
+      data-empid="{{item.empId}}"
+      bindtap="onGenerateQr"
+    >生成/更新太阳码</button>
+  </view>
+</view>

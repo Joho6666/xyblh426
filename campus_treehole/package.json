@@ -1,0 +1,11 @@
+{
+  "name": "campus-treehole-tooling",
+  "private": true,
+  "description": "CloudBase CLI：将 cloudbaserc.json 中的环境变量同步到云端（与小程序 npm 无关）",
+  "scripts": {
+    "cloud:push-fn-env": "node -e \"const{spawn}=require('child_process');function run(n,c){return new Promise((res,rej)=>{const p=spawn('npx',['-p','@cloudbase/cli@latest','tcb','config','update','fn',n],{stdio:['pipe','inherit','inherit'],shell:true,cwd:__dirname});p.stdin.write('\\r\\n');p.on('close',c=>c===0?res():rej(new Error('exit '+c)));});} (async()=>{await run('adminPanel');await run('dbOperations');})();\"",
+    "cloud:login-list": "npx -p @cloudbase/cli@latest tcb env login list -e xyblh-5gb26qrnf9d30feb",
+    "cloud:login-add-anonymous": "npx -p @cloudbase/cli@latest tcb env login create -e xyblh-5gb26qrnf9d30feb",
+    "cloud:login-update": "npx -p @cloudbase/cli@latest tcb env login update -e xyblh-5gb26qrnf9d30feb"
+  }
+}

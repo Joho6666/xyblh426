@@ -1,0 +1,105 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f7f9fc;
+  box-sizing: border-box;
+}
+
+.tip {
+  padding: 24rpx;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.loading {
+  text-align: center;
+  padding: 48rpx;
+  color: #999;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 24rpx rgba(66, 96, 137, 0.08);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 28rpx;
+  padding: 10rpx 0;
+}
+
+.title-row {
+  border-bottom: 1rpx solid #eee;
+  margin-bottom: 8rpx;
+  padding-bottom: 16rpx;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 32rpx;
+  color: #1a1a1a;
+}
+
+.badge {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  background: #e8f0f8;
+  color: #426089;
+}
+
+.k {
+  color: #888;
+}
+
+.v {
+  color: #333;
+  max-width: 460rpx;
+  text-align: right;
+  word-break: break-all;
+}
+
+.stats {
+  justify-content: flex-start;
+  gap: 8rpx;
+  color: #555;
+  margin-top: 8rpx;
+}
+
+.num {
+  font-weight: 600;
+  color: #426089;
+}
+
+.sep {
+  color: #ccc;
+  margin: 0 8rpx;
+}
+
+.qr-wrap {
+  margin-top: 20rpx;
+  text-align: center;
+}
+
+.qr {
+  width: 280rpx;
+  height: 280rpx;
+  background: #fafafa;
+}
+
+.qr-missing {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.btn-gen {
+  margin-top: 20rpx;
+  width: 100%;
+}

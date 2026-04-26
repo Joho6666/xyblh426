@@ -1,0 +1,100 @@
+.page-container {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f7f9fc;
+  box-sizing: border-box;
+}
+
+.form-card,
+.tips-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  box-shadow: 0 8rpx 24rpx rgba(31, 41, 55, 0.05);
+}
+
+.tips-card {
+  margin-top: 24rpx;
+}
+
+.field-block {
+  margin-bottom: 32rpx;
+}
+
+.field-block:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #273142;
+}
+
+.field-textarea {
+  width: 100%;
+  height: 220rpx;
+  padding: 24rpx;
+  background: #f2f5fa;
+  border-radius: 20rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: #273142;
+}
+
+.field-input {
+  width: 100%;
+  height: 92rpx;
+  padding: 0 24rpx;
+  background: #f2f5fa;
+  border-radius: 20rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: #273142;
+}
+
+.field-count {
+  display: block;
+  margin-top: 12rpx;
+  text-align: right;
+  font-size: 22rpx;
+  color: #8a94a6;
+}
+
+.tips-title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #273142;
+}
+
+.tips-text {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #6b7280;
+}
+
+.action-bar {
+  margin-top: 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+}
+
+.save-btn {
+  height: 92rpx;
+  border-radius: 999rpx;
+  background: #426089;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.save-btn-disabled {
+  opacity: 0.5;
+}

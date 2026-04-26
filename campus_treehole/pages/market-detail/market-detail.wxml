@@ -1,0 +1,164 @@
+<!-- pages/market-detail/market-detail.wxml - 商品详情页 -->
+
+<view class="detail-empty-state" wx:if="{{loadError}}">
+  <text class="detail-empty-icon">📦</text>
+  <text class="detail-empty-title">商品暂时不可用</text>
+  <text class="detail-empty-sub">{{loadError}}</text>
+  <view class="detail-empty-btn" bindtap="onRetryLoad">重新加载</view>
+</view>
+
+<view class="page" wx:elif="{{goods}}">
+  <!-- 图片轮播 -->
+  <swiper class="image-swiper" indicator-dots autoplay circular>
+    <swiper-item wx:for="{{goods.images}}" wx:key="index">
+      <image class="swiper-img" src="{{item}}" mode="aspectFill" bindtap="onPreviewImage" data-index="{{index}}" />
+    </swiper-item>
+  </swiper>
+
+  <!-- 价格区 -->
+  <view class="price-card">
+    <view class="price-row">
+      <text class="price-main">¥{{goods.price}}</text>
+      <text class="price-original" wx:if="{{goods.originalPrice}}">¥{{goods.originalPrice}}</text>
+    </view>
+    <text class="goods-title">{{goods.title}}</text>
+    <view class="tag-row">
+      <text class="tag" wx:if="{{goods.condition}}">{{goods.condition}}</text>
+      <text class="tag trade" wx:if="{{goods.tradeMethod}}">{{goods.tradeMethod}}</text>
+      <text class="tag bargain" wx:if="{{goods.bargain}}">可议价</text>
+      <text class="tag category">{{goods.category}}</text>
+    </view>
+  </view>
+
+  <!-- 描述 -->
+  <view class="desc-card" wx:if="{{goods.description}}">
+    <text class="desc-label">宝贝描述</text>
+    <text class="desc-text">{{goods.description}}</text>
+  </view>
+
+  <!-- 卖家信息 -->
+  <view class="seller-card" bindtap="onSellerTap">
+    <image class="seller-avatar" src="{{goods.avatar || '/images/avatar_default.png'}}" />
+    <view class="seller-info">
+      <text class="seller-name">{{goods.nickname || '卖家'}}</text>
+      <text class="seller-id">ID: {{goods.numericId || '未设置'}}</text>
+      <text class="seller-time">发布于 {{goods.timeStr}}</text>
+    </view>
+    <text class="seller-arrow">›</text>
+  </view>
+
+  <view class="owner-manage-card" wx:if="{{isOwner}}">
+    <text class="owner-manage-text">这是你发布的商品，可随时手动下架。</text>
+    <view class="owner-manage-btn" bindtap="onDeleteGoods">下架商品</view>
+  </view>
+
+  <view class="comment-card">
+    <view class="comment-header">
+      <text class="comment-title">商品讨论</text>
+      <text class="comment-count">{{commentCount}} 条评论</text>
+    </view>
+
+    <view class="comment-editor">
+      <view class="reply-banner" wx:if="{{replyTarget}}">
+        <text class="reply-banner-text">正在回复 @{{replyTarget.nickname}}</text>
+        <text class="reply-banner-cancel" bindtap="onCancelReply">取消</text>
+      </view>
+      <view class="comment-editor-row">
+        <input
+          class="comment-input"
+          placeholder="{{inputPlaceholder}}"
+          value="{{commentText}}"
+          bindinput="onCommentInput"
+          confirm-type="send"
+          bindconfirm="onSendComment"
+        />
+        <view class="comment-send-btn {{sendingComment ? 'comment-send-btn-disabled' : ''}}" bindtap="onSendComment">
+          {{sendingComment ? '发送中' : '发送'}}
+        </view>
+      </view>
+    </view>
+
+    <view class="comment-empty" wx:if="{{commentCount === 0}}">
+      <text>还没有评论，来聊聊这个商品吧</text>
+    </view>
+
+    <view class="comment-list" wx:else>
+      <view class="comment-item" wx:for="{{comments}}" wx:key="_id">
+        <image class="comment-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" mode="aspectFill" />
+        <view class="comment-body">
+          <view class="comment-top">
+            <text class="comment-name">{{item.nickname || '用户'}}</text>
+            <text class="comment-user-id" wx:if="{{item.numericId}}">ID: {{item.numericId}}</text>
+            <text class="comment-time">{{item.timeStr}}</text>
+          </view>
+          <view class="comment-reply-quote" wx:if="{{item.replyTo && item.replyTo.nickname}}">
+            <text class="comment-reply-label">回复 @{{item.replyTo.nickname}}</text>
+          </view>
+          <text class="comment-content">{{item.content}}</text>
+          <text class="comment-reply-btn" bindtap="onReplyComment" data-id="{{item._id}}">回复</text>
+
+          <view class="comment-replies" wx:if="{{item.replies && item.replies.length > 0}}">
+            <view class="comment-reply-item" wx:for="{{item.replies}}" wx:key="_id">
+              <image class="comment-reply-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" mode="aspectFill" />
+              <view class="comment-reply-body">
+                <view class="comment-top">
+                  <text class="comment-name">{{item.nickname || '用户'}}</text>
+                  <text class="comment-user-id" wx:if="{{item.numericId}}">ID: {{item.numericId}}</text>
+                  <text class="comment-time">{{item.timeStr}}</text>
+                </view>
+                <view class="comment-reply-quote" wx:if="{{item.replyTo && item.replyTo.nickname}}">
+                  <text class="comment-reply-label">回复 @{{item.replyTo.nickname}}</text>
+                </view>
+                <text class="comment-content">{{item.content}}</text>
+                <text class="comment-reply-btn" bindtap="onReplyComment" data-id="{{item._id}}">回复</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏：分享与私信合并为「分享」入口 -->
+  <view class="bottom-bar">
+    <view class="bar-btn" bindtap="onFavor">
+      <text class="bar-icon">{{isFavored ? '❤️' : '🤍'}}</text>
+      <text class="bar-label">{{isFavored ? '已收藏' : '收藏'}}</text>
+    </view>
+    <view class="bar-btn bar-btn-wide" bindtap="onOpenShareSheet">
+      <text class="bar-icon">📤</text>
+      <text class="bar-label">分享 / 私信</text>
+    </view>
+    <view class="bar-right" wx:if="{{isOwner}}">
+      <view class="chat-btn chat-btn-owner" bindtap="onDeleteGoods">下架商品</view>
+    </view>
+  </view>
+</view>
+
+<view class="loading" wx:else>
+  <text>加载中...</text>
+</view>
+
+<view
+  class="md-share-mask"
+  wx:if="{{showShareSheet}}"
+  catchtap="onCloseShareSheet"
+  catchtouchmove="preventMove"
+>
+  <view class="md-share-sheet" catchtap="noop">
+    <view class="md-share-grabber"></view>
+    <text class="md-share-title">分享与联系</text>
+    <view
+      class="md-share-row md-share-row-primary"
+      wx:if="{{isOwner}}"
+      bindtap="onSheetShareGoodsToPm"
+    >分享到私信</view>
+    <view
+      class="md-share-row md-share-row-primary"
+      wx:if="{{!isOwner}}"
+      bindtap="onSheetChatWithGoods"
+    >私信卖家并发送商品卡片</view>
+    <button class="md-share-row md-share-row-wx" open-type="share">分享给微信好友</button>
+    <view class="md-share-row md-share-cancel" bindtap="onCloseShareSheet">取消</view>
+  </view>
+</view>

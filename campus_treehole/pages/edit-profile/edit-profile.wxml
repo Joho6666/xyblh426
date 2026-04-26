@@ -1,0 +1,37 @@
+<view class="page-container">
+  <view class="form-card">
+    <view class="field-block">
+      <text class="field-label">自我介绍</text>
+      <textarea
+        class="field-textarea"
+        placeholder="介绍一下自己..."
+        maxlength="100"
+        value="{{editBio}}"
+        bindinput="onBioInput"
+        cursor-spacing="120"
+        show-confirm-bar="{{false}}"
+      ></textarea>
+      <text class="field-count">{{editBio.length}}/100</text>
+    </view>
+
+    <view class="field-block">
+      <text class="field-label">兴趣爱好（用顿号分隔）</text>
+      <input
+        class="field-input"
+        placeholder="如：编程、摄影、跑步"
+        value="{{editTags}}"
+        bindinput="onTagsInput"
+        cursor-spacing="120"
+      />
+    </view>
+  </view>
+
+  <view class="tips-card">
+    <text class="tips-title">填写建议</text>
+    <text class="tips-text">简介和标签会展示在你的个人资料页，建议简短清晰，避免敏感或违规内容。</text>
+  </view>
+
+  <view class="action-bar">
+    <view class="save-btn {{saving ? 'save-btn-disabled' : ''}}" bindtap="onSave">保存资料</view>
+  </view>
+</view>

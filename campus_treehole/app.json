@@ -1,0 +1,75 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/market/market",
+    "pages/post/post",
+    "pages/message/message",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/chat/chat",
+    "pages/profile/profile",
+    "pages/follow/follow",
+    "pages/edit-profile/edit-profile",
+    "pages/post-editor/post-editor",
+    "pages/privacy/privacy",
+    "pages/login/login",
+    "pages/admin-referral/admin-referral",
+    "pages/market-post/market-post",
+    "pages/market-detail/market-detail"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#f7f9fc",
+    "navigationBarTitleText": "校园便利盒",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f9fc",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#426089",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab_home.png",
+        "selectedIconPath": "images/tab_home_active.png"
+      },
+      {
+        "pagePath": "pages/market/market",
+        "text": "集市",
+        "iconPath": "images/tab_market.png",
+        "selectedIconPath": "images/tab_market_active.png"
+      },
+      {
+        "pagePath": "pages/post/post",
+        "text": "发布",
+        "iconPath": "images/tab_post.png",
+        "selectedIconPath": "images/tab_post_active.png"
+      },
+      {
+        "pagePath": "pages/message/message",
+        "text": "消息",
+        "iconPath": "images/tab_message.png",
+        "selectedIconPath": "images/tab_message_active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我",
+        "iconPath": "images/tab_mine.png",
+        "selectedIconPath": "images/tab_mine_active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "networkTimeout": {
+    "request": 10000,
+    "downloadFile": 10000,
+    "uploadFile": 10000,
+    "connectSocket": 10000
+  },
+  "sitemapLocation": "sitemap.json"
+}

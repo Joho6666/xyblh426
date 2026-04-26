@@ -1,0 +1,151 @@
+<!-- 启动封面：数据就绪前展示，避免空白等待 -->
+<view class="splash {{splashHidden ? 'splash-exit' : ''}}" wx:if="{{showSplash}}">
+  <view class="splash-inner">
+    <view class="splash-logo-ring">
+      <image class="splash-logo-img" src="/images/logo_campus_box.png" mode="aspectFill"></image>
+    </view>
+    <text class="splash-name">校园便利盒</text>
+    <view class="splash-bar"><view class="splash-bar-fill"></view></view>
+    <text class="splash-hint">正在为你加载校园新鲜事…</text>
+  </view>
+</view>
+
+<view class="page">
+  <view class="index-ambient">
+    <view class="ambient-orb ambient-orb-1"></view>
+    <view class="ambient-orb ambient-orb-2"></view>
+    <view class="ambient-orb ambient-orb-3"></view>
+  </view>
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <view class="nav-tabs">
+        <text class="nav-tab {{feedType === 'follow' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="follow">关注</text>
+        <text class="nav-tab {{feedType === 'discover' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="discover">发现</text>
+      </view>
+      <view class="nav-search" bindtap="onSearchFocus">
+        <text class="nav-search-icon">🔍</text>
+        <input class="nav-search-input" placeholder="搜索" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
+        <view class="nav-search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">清除</view>
+      </view>
+    </view>
+  </view>
+
+  <view style="height: {{navOffsetHeight}}px;"></view>
+
+  <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+    <view class="category-track">
+      <view
+        class="cat-tag {{currentCategory === index ? 'cat-active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="index"
+        bindtap="onCategoryTap"
+        data-index="{{index}}"
+      >{{item}}</view>
+    </view>
+  </scroll-view>
+
+  <!-- 骨架屏：首屏数据到达前占位 -->
+  <view class="skeleton-feed" wx:if="{{showSkeleton}}">
+    <view class="skeleton-col">
+      <view class="skeleton-card"><view class="skeleton-img"></view><view class="skeleton-lines"><view class="skeleton-line w80"></view><view class="skeleton-line w60"></view></view></view>
+      <view class="skeleton-card"><view class="skeleton-img skeleton-img-tall"></view><view class="skeleton-lines"><view class="skeleton-line w70"></view><view class="skeleton-line w50"></view></view></view>
+    </view>
+    <view class="skeleton-col">
+      <view class="skeleton-card"><view class="skeleton-img skeleton-img-tall"></view><view class="skeleton-lines"><view class="skeleton-line w90"></view><view class="skeleton-line w40"></view></view></view>
+      <view class="skeleton-card"><view class="skeleton-img"></view><view class="skeleton-lines"><view class="skeleton-line w60"></view><view class="skeleton-line w80"></view></view></view>
+    </view>
+  </view>
+
+  <view class="page-hint" wx:if="{{!showSkeleton}}">
+    <text>{{searchKeyword ? '正在按关键词筛选内容' : '下拉刷新获取最新动态'}}</text>
+  </view>
+
+  <view class="waterfall" wx:if="{{!showSkeleton}}">
+    <view class="wf-col">
+      <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
+        <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
+        </view>
+        <view wx:elif="{{item.videos && item.videos.length > 0}}" class="wf-video-wrap">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <video class="wf-video-el" src="{{item.videos[0]}}" object-fit="cover" show-center-play-btn="{{false}}" show-play-btn="{{false}}" controls="{{false}}" muted="{{true}}" bindloadedmetadata="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}"></video>
+          <view class="video-badge"><text>视频</text></view>
+        </view>
+        <view wx:else class="wf-text-card">
+          <text class="wf-text-only">{{item.content}}</text>
+        </view>
+        <view class="wf-info">
+          <text class="wf-title">{{item.title || item.content}}</text>
+          <view class="wf-footer">
+            <view class="wf-author">
+              <image class="wf-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" lazy-load />
+              <text class="wf-name">{{item.nickname || '匿名'}}</text>
+            </view>
+            <view class="wf-actions">
+              <view class="wf-favor {{item.isFavored ? 'favored' : ''}}" catchtap="onFavorTap" data-id="{{item._id}}">
+                <text class="favor-icon">{{item.isFavored ? '★' : '☆'}}</text>
+              </view>
+              <view class="wf-like {{item.isLiked ? 'liked' : ''}}" catchtap="onLikeTap" data-id="{{item._id}}">
+                <text class="like-icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
+                <text class="like-num">{{item.likes || 0}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="wf-col">
+      <view class="wf-card wf-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40 + 20}}ms;">
+        <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
+        </view>
+        <view wx:elif="{{item.videos && item.videos.length > 0}}" class="wf-video-wrap">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <video class="wf-video-el" src="{{item.videos[0]}}" object-fit="cover" show-center-play-btn="{{false}}" show-play-btn="{{false}}" controls="{{false}}" muted="{{true}}" bindloadedmetadata="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}"></video>
+          <view class="video-badge"><text>视频</text></view>
+        </view>
+        <view wx:else class="wf-text-card">
+          <text class="wf-text-only">{{item.content}}</text>
+        </view>
+        <view class="wf-info">
+          <text class="wf-title">{{item.title || item.content}}</text>
+          <view class="wf-footer">
+            <view class="wf-author">
+              <image class="wf-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" lazy-load />
+              <text class="wf-name">{{item.nickname || '匿名'}}</text>
+            </view>
+            <view class="wf-actions">
+              <view class="wf-favor {{item.isFavored ? 'favored' : ''}}" catchtap="onFavorTap" data-id="{{item._id}}">
+                <text class="favor-icon">{{item.isFavored ? '★' : '☆'}}</text>
+              </view>
+              <view class="wf-like {{item.isLiked ? 'liked' : ''}}" catchtap="onLikeTap" data-id="{{item._id}}">
+                <text class="like-icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
+                <text class="like-num">{{item.likes || 0}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="load-status" wx:if="{{loading || searchLoading}}">
+    <text class="load-text">加载中...</text>
+  </view>
+  <view class="load-status empty" wx:elif="{{loadError}}">
+    <text class="empty-emoji">⚠️</text>
+    <text class="load-text">{{loadError}}</text>
+  </view>
+  <view class="load-status" wx:elif="{{!hasMore && posts.length > 0}}">
+    <text class="load-text">已经到底了</text>
+  </view>
+  <view class="load-status empty" wx:elif="{{!loading && posts.length === 0}}">
+    <text class="empty-emoji">{{searchKeyword ? '🔎' : '🫧'}}</text>
+    <text class="load-text">{{searchKeyword ? '没有找到相关动态' : '还没有动态，快去发布吧'}}</text>
+  </view>
+
+  <view style="height: 180rpx;"></view>
+</view>

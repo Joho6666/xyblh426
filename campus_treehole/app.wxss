@@ -1,0 +1,237 @@
+/* app.wxss - 全局样式文件 */
+/* 基于 DESIGN.md 设计规范：Campus Blue 学院蓝主题 */
+
+/* ========== CSS 变量 / 设计令牌 ========== */
+page {
+  /* 主色 */
+  --primary: #426089;
+  --primary-dim: #35547d;
+  --primary-container: #afcefd;
+  --on-primary: #f8f8ff;
+  --on-primary-container: #25456c;
+
+  /* 辅助色 */
+  --secondary: #556071;
+  --secondary-container: #d8e3f8;
+  --on-secondary-container: #475263;
+
+  /* 第三色 - 树洞专用 */
+  --tertiary: #635983;
+  --tertiary-container: #d8cafc;
+  --on-tertiary-container: #4b416a;
+
+  /* 表面色层级 */
+  --surface: #f7f9fc;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f0f4f8;
+  --surface-container: #e9eef3;
+  --surface-container-high: #e3e9ee;
+  --surface-container-highest: #dce3e9;
+
+  /* 文字色 */
+  --on-surface: #2c3338;
+  --on-surface-variant: #596065;
+  --outline: #747c81;
+  --outline-variant: #abb3b9;
+
+  /* 错误色 */
+  --error: #a83836;
+  --error-container: #fce8e6;
+  --on-error-container: #5c1210;
+
+  /* 成功 / 提示（信息条、轻量状态） */
+  --success-container: #d1fae5;
+  --on-success-container: #065f46;
+  --info-container: #dbeafe;
+  --on-info-container: #1e40af;
+
+  /* 互补强调色：价格、点赞、少量 CTA，与学院蓝形成清晰层次（主流「品牌色 + 一点暖色」） */
+  --accent: #c94a62;
+  --accent-soft: rgba(201, 74, 98, 0.12);
+
+  /* 字号阶梯（主流 App：标题略大、正文易读、辅助信息克制） */
+  --text-xs: 22rpx;
+  --text-sm: 24rpx;
+  --text-body: 28rpx;
+  --text-md: 30rpx;
+  --text-lg: 32rpx;
+  --text-xl: 34rpx;
+  --text-title: 36rpx;
+  --text-hero: 40rpx;
+
+  /* 圆角与阴影（卡片更「软」、层次更清晰） */
+  --radius-sm: 16rpx;
+  --radius-md: 24rpx;
+  --radius-lg: 32rpx;
+  --radius-xl: 40rpx;
+  --shadow-card: 0 8rpx 32rpx rgba(44, 51, 56, 0.06);
+  --shadow-card-hover: 0 16rpx 48rpx rgba(44, 51, 56, 0.08);
+  --hairline: rgba(116, 124, 129, 0.12);
+
+  /* 全局背景 */
+  background-color: var(--surface);
+  color: var(--on-surface);
+  font-size: var(--text-body);
+  line-height: 1.65;
+}
+
+/* ========== 通用工具类 ========== */
+
+/* 卡片基础样式 - 遵循 "No-Line Rule"，用背景色差代替边框 */
+.card {
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-lg);
+  padding: 32rpx;
+  box-shadow: var(--shadow-card);
+  box-sizing: border-box;
+}
+
+/* 树洞气泡 - 匿名帖子的特殊样式 */
+.tree-hole-bubble {
+  background-color: var(--tertiary-container);
+  border-radius: 48rpx 48rpx 16rpx 48rpx;
+  padding: 32rpx;
+}
+
+/* 主按钮 - 药丸形 */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dim));
+  color: var(--on-primary);
+  border-radius: 999rpx;
+  padding: 16rpx 40rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  border: none;
+  text-align: center;
+}
+
+/* 次要按钮 */
+.btn-secondary {
+  background-color: var(--secondary-container);
+  color: var(--on-secondary-container);
+  border-radius: 999rpx;
+  padding: 16rpx 40rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  border: none;
+  text-align: center;
+}
+
+/* 标签按钮 - 分类筛选用 */
+.tag {
+  background-color: var(--surface-container-low);
+  color: var(--on-surface-variant);
+  border-radius: 999rpx;
+  padding: 12rpx 32rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* 标签激活状态 */
+.tag-active {
+  background-color: var(--primary);
+  color: var(--on-primary);
+}
+
+/* 分类标签 - 帖子类型标记 */
+.category-badge {
+  background-color: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+/* 头像样式 */
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--surface-container);
+}
+
+.avatar image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 柔和投影 - 浮动元素用 */
+.editorial-shadow {
+  box-shadow: 0 12px 32px rgba(44, 51, 56, 0.06);
+}
+
+/* 安全底部间距 - 适配全面屏 */
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
+}
+
+/* 单行省略 */
+.text-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 多行省略 - 2行 */
+.text-ellipsis-2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Flex 布局辅助 */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 间距系统 */
+.gap-sm { gap: 12rpx; }
+.gap-md { gap: 20rpx; }
+.gap-lg { gap: 32rpx; }
+
+/* ===== 全局性能 ===== */
+image {
+  will-change: auto;
+}
+
+/* 所有 image 默认淡入，避免闪白 */
+.img-fade {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.img-fade-show {
+  opacity: 1;
+}
+
+/* 统一按压反馈 */
+.press-scale {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.press-scale:active {
+  transform: scale(0.97);
+  opacity: 0.95;
+}

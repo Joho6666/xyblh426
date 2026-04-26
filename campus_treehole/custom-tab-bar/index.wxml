@@ -1,0 +1,54 @@
+<view wx:if="{{!hidden}}" class="tab-bar">
+  <view
+    wx:for="{{list}}"
+    wx:key="index"
+    class="tab-item {{index === 2 ? 'tab-center' : ''}}"
+    data-index="{{index}}"
+    bindtap="switchTab"
+  >
+    <!-- 中间发布按钮 -->
+    <block wx:if="{{index === 2}}">
+      <view class="center-btn">
+        <view class="plus-icon">
+          <view class="plus-h"></view>
+          <view class="plus-v"></view>
+        </view>
+      </view>
+    </block>
+    <!-- 普通tab -->
+    <block wx:else>
+      <view class="icon-wrap">
+        <!-- 首页 -->
+        <block wx:if="{{index === 0}}">
+          <view class="svg-icon {{selected === index ? 'active' : ''}}">
+            <view wx:if="{{selected === index}}" class="icon-home-fill"></view>
+            <view wx:else class="icon-home"></view>
+          </view>
+        </block>
+        <!-- 集市 -->
+        <block wx:elif="{{index === 1}}">
+          <view class="svg-icon {{selected === index ? 'active' : ''}}">
+            <view wx:if="{{selected === index}}" class="icon-market-fill"></view>
+            <view wx:else class="icon-market"></view>
+          </view>
+        </block>
+        <!-- 消息 -->
+        <block wx:elif="{{index === 3}}">
+          <view class="svg-icon {{selected === index ? 'active' : ''}}">
+            <view wx:if="{{selected === index}}" class="icon-message-fill"></view>
+            <view wx:else class="icon-message"></view>
+          </view>
+          <view class="tab-badge" wx:if="{{unreadCount > 0}}">{{unreadCount > 99 ? '99+' : unreadCount}}</view>
+        </block>
+        <!-- 我 -->
+        <block wx:elif="{{index === 4}}">
+          <view class="svg-icon {{selected === index ? 'active' : ''}}">
+            <view wx:if="{{selected === index}}" class="icon-mine-fill"></view>
+            <view wx:else class="icon-mine"></view>
+          </view>
+        </block>
+      </view>
+      <text class="tab-text {{selected === index ? 'active' : ''}}">{{item.text}}</text>
+    </block>
+  </view>
+</view>

@@ -1,0 +1,9 @@
+{
+  "name": "bindInviteEmployee",
+  "version": "1.0.0",
+  "description": "绑定员工推广关系（扫码 scene）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

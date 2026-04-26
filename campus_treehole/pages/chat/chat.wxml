@@ -1,0 +1,156 @@
+<view class="chat-page">
+  <view class="chat-user-bar" bindtap="onViewProfile">
+    <image class="chat-user-avatar" src="{{targetUser.avatarUrl || '/images/avatar_default.png'}}" mode="aspectFill"></image>
+    <text class="chat-user-name">{{targetUser.nickName || '对方'}}</text>
+    <text class="chat-user-tip">查看主页</text>
+  </view>
+
+  <view class="chat-status-bar" wx:if="{{composerStatus}}">
+    <text>{{composerStatus}}</text>
+  </view>
+
+  <scroll-view class="chat-body" scroll-y scroll-into-view="{{scrollToMsg}}" scroll-with-animation bindtap="onBodyTap">
+    <view class="chat-empty-state" wx:if="{{loadError}}">
+      <text class="chat-empty-icon">⚠️</text>
+      <text class="chat-empty-title">消息加载失败</text>
+      <text class="chat-empty-sub">{{loadError}}</text>
+      <view class="chat-retry-btn" bindtap="onRetryLoad">重新加载</view>
+    </view>
+
+    <view class="chat-empty-state" wx:elif="{{!loading && messages.length === 0}}">
+      <text class="chat-empty-icon">💬</text>
+      <text class="chat-empty-title">还没有聊天记录</text>
+      <text class="chat-empty-sub">发一条消息开始对话吧</text>
+    </view>
+
+    <view class="chat-msg-list">
+      <view class="chat-msg {{item.isMine ? 'chat-msg-mine' : 'chat-msg-other'}}" wx:for="{{messages}}" wx:key="_id" id="msg-{{item._id}}">
+        <image class="chat-msg-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+        <view class="chat-msg-main">
+          <view class="chat-time" wx:if="{{item.showTime}}">{{item.timeStr}}</view>
+
+          <view class="chat-bubble {{item.isMine ? 'bubble-mine' : 'bubble-other'}}" wx:if="{{item.type === 'text' || item.type === 'emoji'}}">
+            <text class="chat-text {{item.type === 'emoji' ? 'chat-emoji-text' : ''}}">{{item.content}}</text>
+          </view>
+
+          <view class="image-bubble {{item.isMine ? 'image-bubble-mine' : 'image-bubble-other'}}" wx:if="{{item.type === 'image'}}" bindtap="onPreviewImage" data-src="{{item.mediaUrl}}">
+            <image class="chat-image" src="{{item.mediaUrl}}" mode="widthFix"></image>
+          </view>
+
+          <view class="voice-bubble {{item.isMine ? 'voice-bubble-mine' : 'voice-bubble-other'}} {{playingId === item._id ? 'voice-bubble-playing' : ''}}" wx:if="{{item.type === 'voice'}}" catchtap="onPlayVoice" data-id="{{item._id}}" style="width: {{item.voiceWidth}};">
+            <view class="voice-content {{item.isMine ? 'voice-content-mine' : 'voice-content-other'}}">
+              <text class="voice-wave">{{item.isMine ? ')))' : '((('}}</text>
+              <text class="voice-duration">{{item.voiceSeconds}}</text>
+            </view>
+          </view>
+
+          <view
+            class="share-card {{item.isMine ? 'share-card-mine' : 'share-card-other'}}"
+            wx:if="{{item.type === 'post_share' || item.type === 'goods_share'}}"
+            bindtap="onOpenShareCard"
+            data-type="{{item.type === 'post_share' ? 'post' : 'goods'}}"
+            data-id="{{item.shareData.id}}"
+          >
+            <image class="share-card-cover" wx:if="{{item.shareData.image}}" src="{{item.shareData.image}}" mode="aspectFill"></image>
+            <view class="share-card-content">
+              <text class="share-card-tag">{{item.type === 'post_share' ? '帖子分享' : '商品分享'}}</text>
+              <text class="share-card-title">{{item.shareData.title}}</text>
+              <text class="share-card-sub" wx:if="{{item.type === 'goods_share' && item.shareData.price}}">¥{{item.shareData.price}}</text>
+              <text class="share-card-sub" wx:elif="{{item.shareData.summary}}">{{item.shareData.summary}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 录音浮层（全屏拦截，避免底层滑动） -->
+  <view class="recording-overlay" wx:if="{{isRecording}}" catchtouchmove="onRecordingOverlayMove">
+    <view class="recording-box {{recordingCancelHint ? 'recording-box-cancel' : ''}}">
+      <view class="recording-mic-wrap" wx:if="{{recordingCancelHint}}">
+        <text class="recording-cancel-icon">✕</text>
+      </view>
+      <view class="recording-indicator" wx:else>
+        <view class="recording-waves">
+          <view
+            class="recording-wave-bar"
+            wx:for="{{recordingWaveLevels}}"
+            wx:key="index"
+            style="height: {{item}}%;"
+          ></view>
+        </view>
+      </view>
+      <text class="recording-timer">{{recordingTimeStr}}</text>
+      <text class="recording-hint" wx:if="{{!recordingCancelHint}}">松开发送</text>
+      <text class="recording-cancel-text" wx:if="{{recordingCancelHint}}">松开手指，取消发送</text>
+    </view>
+    <view class="recording-bottom-hint {{recordingCancelHint ? 'recording-bottom-hint-cancel' : ''}}">
+      <text class="recording-arrow">↑</text>
+      <text wx:if="{{!recordingCancelHint}}">上滑取消发送</text>
+      <text wx:else>已滑到取消区域</text>
+    </view>
+  </view>
+
+  <view class="pending-share" wx:if="{{pendingShare}}">
+    <view class="pending-share-card" bindtap="onOpenShareCard" data-type="{{pendingShare.type}}" data-id="{{pendingShare.id}}">
+      <image class="pending-share-cover" wx:if="{{pendingShare.displayImage || pendingShare.image}}" src="{{pendingShare.displayImage || pendingShare.image}}" mode="aspectFill"></image>
+      <view class="pending-share-main">
+        <text class="pending-share-tag">{{pendingShare.type === 'post' ? '准备分享帖子' : '准备分享商品'}}</text>
+        <text class="pending-share-title">{{pendingShare.title}}</text>
+        <text class="pending-share-sub" wx:if="{{pendingShare.type === 'goods' && pendingShare.price}}">¥{{pendingShare.price}}</text>
+        <text class="pending-share-sub" wx:elif="{{pendingShare.summary}}">{{pendingShare.summary}}</text>
+      </view>
+    </view>
+    <view class="pending-share-send" bindtap="onSendShareCard">{{sending ? '发送中' : '发送卡片'}}</view>
+  </view>
+
+  <!-- 输入栏 -->
+  <view class="chat-input-bar">
+    <view class="tool-btn tool-btn-mode" bindtap="onToggleVoiceMode">
+      <text class="tool-mode-emoji">{{voiceMode ? '⌨️' : '🎤'}}</text>
+      <text class="tool-mode-label">{{voiceMode ? '键盘' : '语音'}}</text>
+    </view>
+
+    <!-- 语音模式：大号按住说话（类微信） -->
+    <view
+      class="voice-hold-btn {{isRecording ? 'voice-hold-btn-active' : ''}}"
+      wx:if="{{voiceMode}}"
+      hover-class="voice-hold-btn-hover"
+      hover-stay-time="80"
+      catchtouchstart="onVoiceTouchStart"
+      catchtouchmove="onVoiceTouchMove"
+      catchtouchend="onVoiceTouchEnd"
+      catchtouchcancel="onVoiceTouchCancel"
+    >
+      <text class="voice-hold-text">{{isRecording ? (recordingCancelHint ? '松开手指，取消发送' : '松开发送') : '按住 说话'}}</text>
+    </view>
+
+    <!-- 文字模式：输入框 -->
+    <input class="chat-input" wx:if="{{!voiceMode}}" placeholder="输入消息..." value="{{inputText}}" bindinput="onInput" bindfocus="onInputFocus" cursor-spacing="120" confirm-type="send" bindconfirm="onSend" />
+
+    <view class="tool-btn" bindtap="onToggleEmoji">
+      <text>😊</text>
+    </view>
+    <view class="tool-btn" bindtap="onToggleActions">
+      <text>＋</text>
+    </view>
+    <view class="chat-send-btn {{(!inputText.trim() || sending || voiceMode) ? 'chat-send-btn-disabled' : ''}}" bindtap="onSend" wx:if="{{!voiceMode}}">{{sending ? '...' : '发送'}}</view>
+  </view>
+
+  <view class="action-panel" wx:if="{{showActionPanel}}">
+    <view class="action-item" bindtap="onChooseFromAlbum">
+      <view class="action-icon">🖼️</view>
+      <text class="action-label">相册</text>
+    </view>
+    <view class="action-item" bindtap="onTakePhoto">
+      <view class="action-icon">📷</view>
+      <text class="action-label">拍照</text>
+    </view>
+  </view>
+
+  <view class="emoji-panel" wx:if="{{showEmojiPanel}}">
+    <view class="emoji-grid">
+      <view class="emoji-item" wx:for="{{emojis}}" wx:key="*this" bindtap="onEmojiTap" data-emoji="{{item}}">{{item}}</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,8 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "校园便利盒",
+  "onReachBottomDistance": 120,
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "initialRenderingCache": "static"
+}

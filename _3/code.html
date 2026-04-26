@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-container": "#d8e3f8",
+              "surface-container-low": "#f0f4f8",
+              "on-tertiary-fixed-variant": "#554a74",
+              "tertiary-dim": "#574d76",
+              "background": "#f7f9fc",
+              "on-surface": "#2c3338",
+              "tertiary": "#635983",
+              "primary-container": "#afcefd",
+              "outline-variant": "#abb3b9",
+              "surface-dim": "#d4dbe1",
+              "secondary-dim": "#495465",
+              "surface-bright": "#f7f9fc",
+              "secondary-fixed-dim": "#cad5ea",
+              "on-primary-fixed": "#0c3157",
+              "tertiary-fixed": "#d8cafc",
+              "primary": "#426089",
+              "primary-dim": "#35547d",
+              "on-tertiary-container": "#4b416a",
+              "surface-container-high": "#e3e9ee",
+              "on-secondary-container": "#475263",
+              "on-surface-variant": "#596065",
+              "inverse-primary": "#afcefd",
+              "error": "#a83836",
+              "on-secondary": "#f8f8ff",
+              "surface": "#f7f9fc",
+              "inverse-on-surface": "#9a9da0",
+              "primary-fixed-dim": "#a1c0ee",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed": "#382e55",
+              "surface-tint": "#426089",
+              "surface-container": "#e9eef3",
+              "secondary-fixed": "#d8e3f8",
+              "outline": "#747c81",
+              "on-error": "#fff7f6",
+              "on-secondary-fixed": "#354050",
+              "error-dim": "#67040d",
+              "on-primary-fixed-variant": "#2f4e76",
+              "tertiary-fixed-dim": "#cabded",
+              "on-secondary-fixed-variant": "#515c6e",
+              "primary-fixed": "#afcefd",
+              "on-primary": "#f8f8ff",
+              "surface-container-highest": "#dce3e9",
+              "error-container": "#fa746f",
+              "surface-variant": "#dce3e9",
+              "tertiary-container": "#d8cafc",
+              "secondary": "#556071",
+              "on-primary-container": "#25456c",
+              "on-error-container": "#6e0a12",
+              "on-background": "#2c3338",
+              "on-tertiary": "#fdf7ff",
+              "inverse-surface": "#0b0f11"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Be Vietnam Pro"],
+              "label": ["Be Vietnam Pro"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tree-hole-bubble {
+            border-radius: 24px 24px 8px 24px;
+        }
+        .glass-header {
+            background: rgba(247, 249, 252, 0.8);
+            backdrop-filter: blur(20px);
+        }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 w-full glass-header">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-800 dark:text-blue-300" style="">menu</span>
+<h1 class="font-headline font-extrabold tracking-tight text-blue-900 dark:text-blue-100 text-lg" style="">校园墙</h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary-container">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a smiling young university student with soft natural lighting and a blurred campus background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeKybCHnX6BRAUWD0_h0fapg2jEdGbfBnLgkqMsUFL2tX4VVyzQTGmwllY5Ikf5sAcPVaI9A0VlhoU0eNsMnNvMV07ScscvLpIdYcdSdEa6eKKfaqzq_GYjCkm4cdPQKQjsDegxPnVrBx2-RXQ9eF9c2h6zRLUezkrAzGAXnHEKqd1gGw30W-xr4V6ZlN0NYYhH6DfSDQurKtKyNlY02gUjE-BB0DLvfq1mcuPR9DgBhh2cexI2Gpng3UFV9XPTIDU9UB8mbWAC-Yr" style="">
+</div>
+</header>
+<main class="pt-20 pb-28 px-4 max-w-2xl mx-auto space-y-6">
+<!-- Search & Filter Section -->
+<section class="space-y-4">
+<div class="relative">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" style="">search</span>
+</div>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-highest border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all placeholder:text-outline" placeholder="搜索校园新鲜事..." type="text">
+</div>
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-5 py-2 rounded-full bg-primary text-on-primary font-medium whitespace-nowrap shadow-sm" style="">全部</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-colors whitespace-nowrap" style="">学术研讨</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-colors whitespace-nowrap" style="">失物招领</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-colors whitespace-nowrap" style="">社团活动</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-colors whitespace-nowrap" style="">周边美食</button>
+</div>
+</section>
+<!-- Main Content: Featured Bento Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 relative h-48 rounded-xl overflow-hidden group">
+<img class="w-full h-full object-cover" data-alt="Modern university library interior with large windows, students studying, and warm afternoon sunlight streaming through" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXwli6X8B5dLwPfTEuhpWwTwn5TfcAmFjekU3mjJdXUduU29GZ9ocil8HaxJfozabYzgslS-ARQv_bkj-_j5nBYXu6tebcHdhzEnebqgJD3D3jE_zTsVzeZgQWXS0yEldm17tkuNlRCgliV9cEd4ZQDfXN87q5MLQ_jWXF6MPk6xF_sBwmQ7bHYEYTpxU1POXojraCGMylfQ6I_ik4Z0nzcg_Iyk7dLTGcsTyVRycMq46JXqwe1Sxjt53cddTf1nBIFM4_a5zMKh_c" style="">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-5">
+<span class="text-white/80 text-xs font-medium mb-1" style="">今日头条</span>
+<h2 class="text-white font-headline font-bold text-xl leading-tight" style="">本学期图书馆延时开放公告：迎接期末周</h2>
+</div>
+</div>
+<!-- Tree Hole Signature Component -->
+<div class="col-span-1 p-5 tree-hole-bubble bg-tertiary-container flex flex-col justify-between">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-on-tertiary-container text-lg" style="">psychology</span>
+<span class="text-on-tertiary-container font-medium text-xs" style="">树洞匿名</span>
+</div>
+<p class="text-on-tertiary-container text-sm leading-relaxed mb-4" style="">今天在二教楼下看到那只三花猫了，它好像胖了一点，好可爱啊...</p>
+<div class="flex justify-between items-center">
+<span class="text-[10px] text-on-tertiary-container/60" style="">3分钟前</span>
+<span class="material-symbols-outlined text-sm text-on-tertiary-container" style="font-variation-settings: &quot;FILL&quot; 1;">favorite</span>
+</div>
+</div>
+<div class="col-span-1 bg-surface-container-lowest rounded-xl p-5 shadow-sm">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-on-secondary-container" style="">campaign</span>
+</div>
+<h3 class="font-headline font-bold text-sm mb-2" style="">二手市集</h3>
+<p class="text-on-surface-variant text-xs mb-3" style="">学长毕业甩卖，9成新显示器，价格好商量...</p>
+<span class="text-primary font-bold text-xs" style="">查看详情 →</span>
+</div>
+</div>
+<!-- Post Cards -->
+<section class="space-y-4">
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container">
+<img class="w-full h-full object-cover rounded-full" data-alt="Candid portrait of a young woman student with glasses laughing, vibrant campus environment in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsZhgywqp-oemRS_oRmSMfyXupCW0qJBbnt1nODciEgtENgv2AW9QvuJRDzw5pAXOaT47EuoKZLCG-QWIxji3hvtMs6b7ETdnsqElRGipUwRPiWNFHQMLxWyUXfBRUm0Unsm1jIGTRoZ-5PIcEzG-2q8kLpMSy80Rh8N-LEAmk6nYblLxH02K3909dJgToaH3LMDSUdav_uEpNutI4m6Io7Ue2mobbudNRdSTkAmqGSkzes_c0dMj7c_ruyVaEUJXrFGCk5IV31zxt" style="">
+</div>
+<div>
+<div class="font-bold text-sm" style="">苏格拉底的小粉丝</div>
+<div class="text-[10px] text-outline" style="">哲学系 · 2小时前</div>
+</div>
+</div>
+<p class="text-on-surface leading-relaxed text-sm" style="">谁能告诉我，为什么早八的课总是选在离寝室最远的教学楼？这不符合存在主义的合理性！😩 #校园吐槽 #早八人</p>
+<div class="flex items-center gap-6 pt-2">
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors" style="">
+<span class="material-symbols-outlined text-lg" style="">favorite</span>
+<span class="text-xs font-medium" style="">128</span>
+</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors" style="">
+<span class="material-symbols-outlined text-lg" style="">chat_bubble</span>
+<span class="text-xs font-medium" style="">32</span>
+</button>
+<button class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors" style="">
+<span class="material-symbols-outlined text-lg" style="">share</span>
+<span class="text-xs font-medium" style="">分享</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container">
+<img class="w-full h-full object-cover rounded-full" data-alt="Young male student in a casual hoodie walking through a sun-drenched university courtyard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOGafJtyWukwh-3Txvchtfjc5LXjsFdD2fZ97g8mT4FHRCJxyPNEhRey8l8k8PUYNoGb5Et5ex6vRQTNb3wsfZpMERszG-J9_fhydahbtOTbybCP-pbdbnKl4DZusG0L3iW_TD05T39w0x3fJSkU5WR0ABJSUlPEgc41o2sVEQCL14ljSwOX3Ec9ht9ajREk-0vo6yM46MoI8fLjX3rkqF7D_7Fp2i604jTzH8ayi5wM88VcS-A9_yE-B7Zxhsb_olR8E_HhaIB4eC" style="">
+</div>
+<div>
+<div class="font-bold text-sm" style="">代码搬运工</div>
+<div class="text-[10px] text-outline" style="">计科院 · 5小时前</div>
+</div>
+</div>
+<div class="rounded-lg overflow-hidden h-40">
+<img class="w-full h-full object-cover" data-alt="Minimalist desk setup with a laptop showing lines of code, a coffee mug, and a small desk plant in soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDM24wPd4eqvheozZQbaob4BTHLvy1wJcebP9Mqm7wd1kC-SCBhGl4dT4WRaNSeqqqX6rOXa4TmeojJsbP9AsDIA3S6WduZ_uQnDaTtu95i56E0Dz7k9dmuXQlWjcDiJ6okUmUhHiy0-YfY24MD_zlz3TSQhemi38hjutrmBgicmwOhxrdZnOnZEIm9-Nttfu1t4RSL403xV4HBBBF8m1c7vUfPhns5nv9OiUZT8aj6f4HXKwohFghujxS5iXywDQl5GyApSwH7Wsoq" style="">
+</div>
+<p class="text-on-surface leading-relaxed text-sm" style="">终于把那个该死的Bug修好了，通宵了两天，现在的我眼里全是0和1。有推荐的好吃宵夜吗？</p>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full h-20 flex justify-around items-center px-8 pb-safe glass-nav rounded-t-[24px] z-50 shadow-[0_-12px_32px_rgba(44,51,56,0.06)]">
+<!-- Home Tab -->
+<a class="flex flex-col items-center justify-center text-blue-800 dark:text-blue-300 font-bold transition-all duration-300" href="#" style="">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">home</span>
+<span class="font-label text-[10px] font-medium mt-1" style="">首页</span>
+</a>
+<!-- Create Tab (Center, prominent) -->
+<a class="scale-125 -translate-y-4 bg-blue-900 dark:bg-blue-700 text-white rounded-full p-4 shadow-lg active:scale-95 transition-all duration-300 flex items-center justify-center" href="#" style="">
+<span class="material-symbols-outlined text-2xl" style="">add</span>
+</a>
+<!-- Profile Tab -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-700 transition-colors" href="#" style="">
+<span class="material-symbols-outlined" style="">person</span>
+<span class="font-label text-[10px] font-medium mt-1" style="">我的</span>
+</a>
+</nav>
+</body></html>

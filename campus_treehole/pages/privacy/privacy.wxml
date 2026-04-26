@@ -1,0 +1,92 @@
+<!-- pages/privacy/privacy.wxml - 用户协议与隐私政策（可完整滚动 + 底部固定操作） -->
+<view class="privacy-page">
+  <view class="privacy-header">
+    <text class="privacy-title">用户协议与隐私政策</text>
+    <text class="privacy-subtitle">请完整阅读下列条款，滑动查看全部内容</text>
+  </view>
+
+  <!-- flex:1 + height:0 让 scroll-view 在小程序内获得可滚动高度 -->
+  <view class="privacy-scroll-wrap">
+    <scroll-view class="privacy-scroll" scroll-y show-scrollbar="{{true}}">
+      <view class="privacy-card">
+        <view class="section">
+          <text class="section-title">一、用户协议</text>
+          <text class="section-text">
+1. 欢迎使用「校园便利盒」小程序（以下简称"本平台"）。使用本平台前，请您仔细阅读并理解本协议的全部内容。
+
+2. 注册与使用：您通过微信授权登录即视为注册。您应保证提供的信息真实有效。
+
+3. 用户行为规范：
+   - 不得发布违反法律法规的内容
+   - 不得发布涉及政治敏感、色情低俗、暴力恐怖、赌博诈骗等违规信息
+   - 不得利用本平台从事任何违法活动
+   - 不得骚扰、威胁、侮辱其他用户
+   - 不得发布虚假信息或恶意造谣
+
+4. 内容管理：
+   - 本平台有权对用户发布的内容进行审核
+   - 对违规内容，本平台有权进行删除、屏蔽等处理
+   - 对严重违规用户，本平台有权封禁其账号
+
+5. 免责声明：
+   - 用户发布的内容代表其个人观点，不代表本平台立场
+   - 因不可抗力导致的服务中断，本平台不承担责任
+
+6. 协议修改：本平台有权随时修改本协议，修改后的协议将在平台内公布。
+          </text>
+        </view>
+
+        <view class="section">
+          <text class="section-title">二、隐私政策</text>
+          <text class="section-text">
+1. 信息收集：
+   - 微信昵称、头像（用于展示个人资料）
+   - 微信 OpenID（用于身份识别，不可见于其他用户）
+   - 您主动填写的学院、简介、兴趣标签等信息
+   - 您发布的帖子、评论、私信等内容
+
+2. 信息使用：
+   - 用于提供社区功能和个性化服务
+   - 用于内容安全审核和违规检测
+   - 用于平台运营数据统计（不含个人身份信息）
+
+3. 信息存储：
+   - 您的数据存储在微信云开发安全环境中
+   - 我们采取合理的安全措施保护您的个人信息
+
+4. 信息共享：
+   - 未经您同意，我们不会向第三方提供您的个人信息
+
+5. 用户权利：
+   - 您有权查看、修改您的个人信息
+   - 您有权注销账号；注销后我们将停止向您提供服务，对您的内容进行下架或匿名化处理，并按法律法规要求留存或删除相关数据
+   - 您有权举报违规内容
+
+6. 未成年人保护：
+   - 若您为未满18周岁的未成年人，请在监护人陪同下阅读本协议
+   - 本平台高度重视未成年人个人信息保护
+
+7. 联系方式：
+   - 如有隐私相关问题，请通过小程序内「联系客服」或公众平台公示的客服方式与我们联系
+          </text>
+        </view>
+
+        <!-- 底部留白，避免最后一段文字贴边 -->
+        <view class="privacy-card-pad"></view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="privacy-footer">
+    <checkbox-group bindchange="onAgreeChange">
+      <label class="agree-label">
+        <checkbox value="agreed" color="#426089" />
+        <text class="agree-text">我已阅读并同意《用户协议》和《隐私政策》</text>
+      </label>
+    </checkbox-group>
+    <view class="btn-group">
+      <view class="btn-decline" bindtap="onDecline">不同意</view>
+      <view class="btn-agree {{agreed ? '' : 'btn-disabled'}}" bindtap="onConfirm">同意并继续</view>
+    </view>
+  </view>
+</view>

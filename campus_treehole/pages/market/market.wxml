@@ -1,0 +1,123 @@
+<view class="page">
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-content">
+      <text class="nav-title">校园集市</text>
+      <view class="nav-search" bindtap="onSearchFocus">
+        <text class="search-icon">🔍</text>
+        <input class="search-input" placeholder="搜索闲置好物" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
+        <view class="nav-search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">清除</view>
+      </view>
+    </view>
+  </view>
+
+  <view style="height: {{navOffsetHeight}}px;"></view>
+
+  <scroll-view class="cat-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+    <view class="cat-track">
+      <view class="cat-item {{currentCategory === index ? 'cat-active' : ''}}" wx:for="{{categories}}" wx:key="index" bindtap="onCategoryTap" data-index="{{index}}">
+        <text class="cat-emoji">{{item.icon}}</text>
+        <text class="cat-name">{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 骨架屏 -->
+  <view class="skeleton-feed" wx:if="{{showSkeleton}}">
+    <view class="skeleton-col">
+      <view class="skeleton-card"><view class="skeleton-img"></view><view class="skeleton-lines"><view class="skeleton-line w80"></view><view class="skeleton-line w50"></view><view class="skeleton-line w40"></view></view></view>
+      <view class="skeleton-card"><view class="skeleton-img skeleton-img-tall"></view><view class="skeleton-lines"><view class="skeleton-line w70"></view><view class="skeleton-line w60"></view></view></view>
+    </view>
+    <view class="skeleton-col">
+      <view class="skeleton-card"><view class="skeleton-img skeleton-img-tall"></view><view class="skeleton-lines"><view class="skeleton-line w90"></view><view class="skeleton-line w50"></view></view></view>
+      <view class="skeleton-card"><view class="skeleton-img"></view><view class="skeleton-lines"><view class="skeleton-line w60"></view><view class="skeleton-line w80"></view><view class="skeleton-line w40"></view></view></view>
+    </view>
+  </view>
+
+  <view class="page-hint" wx:if="{{!showSkeleton}}">
+    <text>{{searchKeyword ? '正在筛选相关闲置' : '下拉刷新可获取最新上架商品'}}</text>
+  </view>
+
+  <view class="market-disclaimer" wx:if="{{!showSkeleton}}">
+    <text>闲置交易由用户自主沟通，本平台不提供支付、物流与担保；请当面验货、谨防诈骗。</text>
+  </view>
+
+  <view class="waterfall" wx:if="{{!showSkeleton}}">
+    <view class="wf-col">
+      <view class="goods-card goods-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
+        <view wx:if="{{item.images && item.images.length > 0}}" class="goods-cover-wrap">
+          <view class="goods-media-skeleton {{mediaLoadedMap[item._id] ? 'goods-skeleton-hidden' : ''}}"></view>
+          <image class="goods-cover {{mediaLoadedMap[item._id] ? 'goods-cover-ready' : ''}}" src="{{item.images[0]}}" mode="aspectFill" lazy-load bindload="onGoodsImageLoad" binderror="onGoodsImageLoad" data-id="{{item._id}}" />
+        </view>
+        <view wx:else class="goods-cover-empty"><text>暂无图片</text></view>
+        <view class="goods-info">
+          <text class="goods-title">{{item.title}}</text>
+          <view class="goods-price-row">
+            <text class="goods-price">¥{{item.price}}</text>
+            <text class="goods-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
+          </view>
+          <view class="goods-footer">
+            <view class="goods-author">
+              <image class="goods-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" />
+              <text class="goods-name">{{item.nickname || '匿名'}}</text>
+            </view>
+            <text class="goods-want" wx:if="{{item.wantCount}}">{{item.wantCount}}人想要</text>
+          </view>
+          <view class="goods-tags">
+            <text class="goods-tag" wx:if="{{item.condition}}">{{item.condition}}</text>
+            <text class="goods-tag trade-tag" wx:if="{{item.tradeMethod}}">{{item.tradeMethod}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="wf-col">
+      <view class="goods-card goods-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40 + 20}}ms;">
+        <view wx:if="{{item.images && item.images.length > 0}}" class="goods-cover-wrap">
+          <view class="goods-media-skeleton {{mediaLoadedMap[item._id] ? 'goods-skeleton-hidden' : ''}}"></view>
+          <image class="goods-cover {{mediaLoadedMap[item._id] ? 'goods-cover-ready' : ''}}" src="{{item.images[0]}}" mode="aspectFill" lazy-load bindload="onGoodsImageLoad" binderror="onGoodsImageLoad" data-id="{{item._id}}" />
+        </view>
+        <view wx:else class="goods-cover-empty"><text>暂无图片</text></view>
+        <view class="goods-info">
+          <text class="goods-title">{{item.title}}</text>
+          <view class="goods-price-row">
+            <text class="goods-price">¥{{item.price}}</text>
+            <text class="goods-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
+          </view>
+          <view class="goods-footer">
+            <view class="goods-author">
+              <image class="goods-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" />
+              <text class="goods-name">{{item.nickname || '匿名'}}</text>
+            </view>
+            <text class="goods-want" wx:if="{{item.wantCount}}">{{item.wantCount}}人想要</text>
+          </view>
+          <view class="goods-tags">
+            <text class="goods-tag" wx:if="{{item.condition}}">{{item.condition}}</text>
+            <text class="goods-tag trade-tag" wx:if="{{item.tradeMethod}}">{{item.tradeMethod}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="load-status" wx:if="{{loading || searchLoading}}">
+    <text class="load-text">加载中...</text>
+  </view>
+  <view class="load-status empty" wx:elif="{{loadError}}">
+    <text class="empty-emoji">⚠️</text>
+    <text class="load-text">商品加载失败，请稍后重试</text>
+  </view>
+  <view class="load-status" wx:elif="{{!hasMore && goods.length > 0}}">
+    <text class="load-text">已经到底了</text>
+  </view>
+  <view class="load-status empty" wx:elif="{{!loading && goods.length === 0}}">
+    <text class="empty-emoji">{{searchKeyword ? '🔎' : '📦'}}</text>
+    <text class="load-text">{{searchKeyword ? '没有找到匹配的商品' : '还没有商品，快去发布吧'}}</text>
+  </view>
+
+  <view class="fab-btn" bindtap="goPublish">
+    <text class="fab-icon">+</text>
+    <text class="fab-text">发布</text>
+  </view>
+
+  <view style="height: 180rpx;"></view>
+</view>

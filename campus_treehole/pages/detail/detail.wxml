@@ -1,0 +1,199 @@
+<!-- pages/detail/detail.wxml - 帖子详情页（小红书风格） -->
+
+<view class="page-container">
+  <view class="detail-empty-state" wx:if="{{loadError}}">
+    <text class="detail-empty-icon">📝</text>
+    <text class="detail-empty-title">内容暂时不可用</text>
+    <text class="detail-empty-sub">{{loadError}}</text>
+    <view class="detail-empty-actions">
+      <view class="detail-empty-btn" bindtap="onRetryLoad">重新加载</view>
+      <view class="detail-empty-btn detail-empty-btn-ghost" bindtap="onShareTap" wx:if="{{false}}"></view>
+    </view>
+  </view>
+
+  <view class="detail-loading" wx:elif="{{loading}}">
+    <text class="detail-loading-icon">⏳</text>
+    <text class="detail-loading-text">加载中…</text>
+  </view>
+
+  <!-- 帖子主体 -->
+  <view class="card post-detail-card" wx:elif="{{!loading}}">
+    <!-- 用户信息头部 -->
+    <view class="detail-header">
+      <view class="detail-user" bindtap="onAvatarTap" data-openid="{{post._openid}}">
+        <view class="avatar avatar-lg">
+          <image src="{{post.avatar || '/images/avatar_default.png'}}" mode="aspectFill"></image>
+        </view>
+        <view class="detail-user-info">
+          <text class="detail-nickname">{{post.nickname || '用户'}}</text>
+          <text class="detail-meta">{{post.time}} · {{post.college}}</text>
+        </view>
+      </view>
+      <view class="category-badge" wx:if="{{post.category}}">
+        <text>{{post.category}}</text>
+      </view>
+    </view>
+
+    <!-- 帖子正文 -->
+    <view class="detail-body">
+      <text class="detail-title" wx:if="{{post.title}}">{{post.title}}</text>
+      <text class="detail-content">{{post.content}}</text>
+
+      <!-- 多图展示（逐张淡入） -->
+      <view class="detail-images" wx:if="{{post.images && post.images.length > 0}}">
+        <view class="detail-img-wrap" wx:for="{{post.images}}" wx:key="index" style="animation-delay: {{index * 80}}ms;">
+          <view class="detail-img-skeleton {{detailImgLoaded[index] ? 'detail-img-skeleton-hidden' : ''}}"></view>
+          <image
+            class="detail-image {{detailImgLoaded[index] ? 'detail-image-ready' : ''}}"
+            src="{{item}}"
+            mode="widthFix"
+            bindtap="onPreviewImage"
+            data-index="{{index}}"
+            lazy-load
+            bindload="onDetailImgLoad"
+            binderror="onDetailImgLoad"
+            data-idx="{{index}}"
+          />
+        </view>
+      </view>
+      <!-- 兼容旧数据单图 -->
+      <view class="detail-images" wx:elif="{{post.image}}">
+        <image class="detail-image" src="{{post.image}}" mode="widthFix" bindtap="onPreviewImage" data-index="0" />
+      </view>
+
+      <!-- 视频 -->
+      <view class="detail-video-wrap" wx:if="{{post.videos && post.videos.length > 0}}">
+        <video class="detail-video" src="{{post.videos[0]}}" object-fit="cover" controls></video>
+      </view>
+    </view>
+
+    <!-- 互动按钮栏：分享与私信合并为「分享」入口；举报与主操作同一行，避免贴边过远 -->
+    <view class="detail-actions">
+      <view class="detail-actions-row">
+        <view class="action-btn {{isLiked ? 'action-active' : ''}}" bindtap="onLikeTap">
+          <text class="action-emoji">{{isLiked ? '❤️' : '🤍'}}</text>
+          <text class="action-count">{{post.likes || 0}}</text>
+        </view>
+        <view class="action-btn {{isFavored ? 'action-active' : ''}}" bindtap="onFavorTap">
+          <text class="action-emoji">{{isFavored ? '⭐' : '☆'}}</text>
+          <text class="action-count">{{isFavored ? '已收藏' : '收藏'}}</text>
+        </view>
+        <view class="action-btn" bindtap="onCommentFocus">
+          <text class="action-emoji">💬</text>
+          <text class="action-count">{{comments.length || 0}}</text>
+        </view>
+        <view class="action-btn action-share-merge" bindtap="onOpenShareChatSheet">
+          <text class="action-emoji">📤</text>
+          <text class="action-count">分享</text>
+        </view>
+        <view class="action-btn report-inline" bindtap="onReportTap">
+          <text class="action-emoji report-emoji">⚠️</text>
+          <text class="report-label">举报</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="owner-actions-bar" wx:if="{{isOwner}}">
+      <view class="owner-hint">这是你发布的帖子</view>
+      <view class="owner-action-group">
+        <view class="owner-edit-btn" bindtap="onOwnerEditPost">编辑帖子</view>
+        <view class="owner-delete-btn" bindtap="onOwnerDeletePost">删除帖子</view>
+      </view>
+    </view>
+
+    <!-- 管理员操作 -->
+    <view class="admin-actions-bar" wx:if="{{isAdmin}}">
+      <view class="admin-badge">🌟 超管模式</view>
+      <view class="admin-btns">
+        <view class="admin-btn admin-btn-top" bindtap="onAdminTopPost">{{post.isTop ? '取消置顶' : '全局置顶'}}</view>
+        <view class="admin-btn admin-btn-delete" bindtap="onAdminDeletePost">违规删帖</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 评论区 -->
+  <view class="comment-header" wx:if="{{!loadError && !loading}}">
+    <view class="comment-title-wrap">
+      <text class="comment-title">全部评论</text>
+      <text class="comment-count">({{comments.length}})</text>
+    </view>
+    <view class="sort-switcher">
+      <view class="sort-btn {{sortBy === 'hot' ? 'sort-btn-active' : ''}}" bindtap="onSortChange" data-sort="hot">🔥 最热</view>
+      <view class="sort-btn {{sortBy === 'time' ? 'sort-btn-active' : ''}}" bindtap="onSortChange" data-sort="time">🕐 最新</view>
+    </view>
+  </view>
+
+  <!-- 评论列表 -->
+  <view class="comment-empty" wx:if="{{!loadError && !loading && comments.length === 0}}">
+    <text class="comment-empty-text">暂无评论，快来抢沙发吧</text>
+  </view>
+  <view class="comment-list" wx:if="{{!loadError && !loading && comments.length > 0}}">
+    <view class="card comment-card" wx:for="{{comments}}" wx:key="_id">
+      <view class="comment-item">
+        <view class="avatar">
+          <image src="{{item.avatar || '/images/avatar_default.png'}}" mode="aspectFill"></image>
+        </view>
+        <view class="comment-body">
+          <view class="comment-info-row">
+            <view class="comment-info">
+              <text class="comment-name">{{item.nickname}}</text>
+              <text class="comment-time">{{item.time}}</text>
+            </view>
+            <view class="comment-like" catchtap="onCommentLike" data-id="{{item._id}}">
+              <text class="comment-like-emoji">{{item.isLiked ? '❤️' : '🤍'}}</text>
+              <text class="comment-like-count">{{item.likes}}</text>
+            </view>
+          </view>
+
+          <view class="tree-hole-bubble comment-bubble" wx:if="{{item.isBubble}}">
+            <text class="comment-text">{{item.content}}</text>
+          </view>
+          <text class="comment-text" wx:else>{{item.content}}</text>
+
+          <view class="reply-quote" wx:if="{{item.replyTo && item.replyTo.nickname}}">
+            <text class="reply-author">回复 @{{item.replyTo.nickname}}</text>
+          </view>
+
+          <text class="reply-btn" catchtap="onReplyTap" data-id="{{item._id}}">回复</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="detail-bottom-spacer"></view>
+</view>
+
+<!-- 分享 / 私信 合并面板 -->
+<view
+  class="share-sheet-mask"
+  wx:if="{{showShareChatSheet}}"
+  catchtap="onCloseShareChatSheet"
+  catchtouchmove="preventMove"
+>
+  <view class="share-sheet" catchtap="noop">
+    <view class="share-sheet-grabber"></view>
+    <text class="share-sheet-title">分享与联系</text>
+    <button class="share-sheet-btn share-sheet-btn-share" open-type="share">分享给微信好友</button>
+    <view class="share-sheet-btn" wx:if="{{!isOwner}}" bindtap="onSheetPrivateMsg">私信作者</view>
+    <view class="share-sheet-btn share-sheet-cancel" bindtap="onCloseShareChatSheet">取消</view>
+  </view>
+</view>
+
+<!-- 底部评论输入栏 -->
+<view class="comment-input-bar" wx:if="{{!loadError && !loading}}">
+  <view class="comment-input-wrap">
+    <input
+      class="comment-input"
+      placeholder="{{inputPlaceholder}}"
+      value="{{commentText}}"
+      focus="{{commentInputFocus}}"
+      bindinput="onCommentInput"
+      bindblur="onCommentInputBlur"
+      confirm-type="send"
+      bindconfirm="onSendComment"
+    />
+  </view>
+  <view class="send-btn" bindtap="onSendComment">
+    <text class="send-emoji">📤</text>
+  </view>
+</view>

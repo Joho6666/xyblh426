@@ -1,0 +1,124 @@
+<view class="page-container">
+  <view class="msg-header">
+    <view class="msg-header-main">
+      <text class="msg-title">消息</text>
+      <text class="msg-subtitle" wx:if="{{currentTab === 'chat'}}">{{totalUnread > 0 ? ('你有 ' + totalUnread + ' 条未读私信') : '下拉可以刷新最新会话'}}</text>
+      <text class="msg-subtitle" wx:else>{{interactionUnread > 0 ? ('你有 ' + interactionUnread + ' 条未读互动') : '点赞、评论、收藏和关注会在这里提醒'}}</text>
+    </view>
+    <view class="msg-new-btn" wx:if="{{currentTab === 'chat'}}" bindtap="onNewChat">
+      <text>+</text>
+    </view>
+  </view>
+
+  <view class="msg-tabs">
+    <view class="msg-tab {{currentTab === 'chat' ? 'msg-tab-active' : ''}}" bindtap="onTabChange" data-tab="chat">
+      <text>私信</text>
+      <view class="msg-tab-badge" wx:if="{{totalUnread > 0}}">{{totalUnread > 99 ? '99+' : totalUnread}}</view>
+    </view>
+    <view class="msg-tab {{currentTab === 'interaction' ? 'msg-tab-active' : ''}}" bindtap="onTabChange" data-tab="interaction">
+      <text>互动</text>
+      <view class="msg-tab-badge" wx:if="{{interactionUnread > 0}}">{{interactionUnread > 99 ? '99+' : interactionUnread}}</view>
+    </view>
+  </view>
+
+  <block wx:if="{{currentTab === 'chat'}}">
+    <view class="load-status" wx:if="{{loading}}">
+      <text class="empty-text">加载中...</text>
+    </view>
+
+    <view class="empty-state" wx:elif="{{loadError}}">
+      <text class="empty-icon">⚠️</text>
+      <text class="empty-text">消息列表加载失败</text>
+      <text class="empty-sub">下拉刷新或点击下方按钮重试</text>
+      <view class="retry-btn" bindtap="onRetryLoad">重新加载</view>
+    </view>
+
+    <view class="empty-state" wx:elif="{{!loading && conversations.length === 0}}">
+      <text class="empty-icon">💬</text>
+      <text class="empty-text">还没有私信消息</text>
+      <text class="empty-sub">点击右上角 + 开始聊天</text>
+      <view class="retry-btn" bindtap="onNewChat">去找人聊天</view>
+    </view>
+
+    <view class="conv-list" wx:elif="{{conversations.length > 0}}">
+      <view
+        class="conv-item {{item.isUnread ? 'conv-item-unread' : ''}}"
+        wx:for="{{conversations}}"
+        wx:key="targetOpenid"
+        bindtap="onChatTap"
+        data-openid="{{item.targetOpenid}}"
+        data-nickname="{{item.targetNickName}}"
+      >
+        <view class="conv-avatar {{item.isUnread ? 'conv-avatar-unread' : ''}}">
+          <image src="{{item.targetAvatar}}" mode="aspectFill"></image>
+        </view>
+        <view class="conv-info">
+          <view class="conv-top">
+            <view class="conv-name-wrap">
+              <text class="conv-name {{item.isUnread ? 'conv-name-unread' : ''}}">{{item.targetNickName}}</text>
+              <text class="conv-latest-tag" wx:if="{{item.isLatest && !item.isUnread}}">最近联系</text>
+              <text class="conv-unread-tag" wx:if="{{item.isUnread}}">未读</text>
+            </view>
+            <text class="conv-time {{item.isUnread ? 'conv-time-unread' : ''}}">{{item.timeStr}}</text>
+          </view>
+          <view class="conv-bottom">
+            <text class="conv-last {{item.isUnread ? 'conv-last-unread' : ''}}">{{item.lastMessage || '暂无消息'}}</text>
+            <view class="conv-badge" wx:if="{{item.unreadCount > 0}}">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="load-status" wx:if="{{interactionLoading}}">
+      <text class="empty-text">加载中...</text>
+    </view>
+
+    <view class="empty-state" wx:elif="{{interactionLoadError}}">
+      <text class="empty-icon">⚠️</text>
+      <text class="empty-text">互动消息加载失败</text>
+      <text class="empty-sub">下拉刷新或点击下方按钮重试</text>
+      <view class="retry-btn" bindtap="onRetryLoad">重新加载</view>
+    </view>
+
+    <view class="empty-state" wx:elif="{{!interactionLoading && interactions.length === 0}}">
+      <text class="empty-icon">🔔</text>
+      <text class="empty-text">还没有新的互动</text>
+      <text class="empty-sub">别人给你点赞、评论、收藏或关注后会出现在这里</text>
+    </view>
+
+    <view class="notice-list" wx:elif="{{interactions.length > 0}}">
+      <view
+        class="notice-item {{!item.isRead ? 'notice-item-unread' : ''}}"
+        wx:for="{{interactions}}"
+        wx:key="_id"
+        bindtap="onNotificationTap"
+        data-target-type="{{item.targetType}}"
+        data-target-id="{{item.targetId}}"
+        data-post-id="{{item.postId}}"
+        data-goods-id="{{item.goodsId}}"
+        data-from-openid="{{item.fromOpenid}}"
+      >
+        <view class="notice-avatar-wrap">
+          <image class="notice-avatar" src="{{item.actorAvatar}}" mode="aspectFill"></image>
+          <view class="notice-dot" wx:if="{{!item.isRead}}"></view>
+        </view>
+        <view class="notice-main">
+          <view class="notice-top">
+            <text class="notice-summary">{{item.summaryText}}</text>
+            <text class="notice-time">{{item.timeStr}}</text>
+          </view>
+          <text class="notice-content" wx:if="{{item.content}}">{{item.content}}</text>
+          <view class="notice-meta-row">
+            <text class="notice-type-tag">{{item.typeLabel}}</text>
+            <text class="notice-user-id" wx:if="{{item.actorNumericId}}">ID: {{item.actorNumericId}}</text>
+          </view>
+        </view>
+        <image class="notice-cover" wx:if="{{item.itemImage}}" src="{{item.itemImage}}" mode="aspectFill"></image>
+      </view>
+    </view>
+  </block>
+
+  <view class="bottom-placeholder"></view>
+</view>

@@ -1,0 +1,129 @@
+<!-- pages/market-post/market-post.wxml - 发布闲置商品（闲鱼风格） -->
+
+<view class="page">
+  <view class="draft-banner" wx:if="{{draftStatus}}">
+    <text>{{draftStatus}}</text>
+  </view>
+
+  <!-- 图片上传区 -->
+  <view class="image-section">
+    <scroll-view class="image-scroll" scroll-x enable-flex>
+      <view class="img-item" wx:for="{{selectedImages}}" wx:key="index">
+        <image class="img-preview" src="{{item.path}}" mode="aspectFill" bindtap="onPreviewImage" data-index="{{index}}" />
+        <view class="img-remove" catchtap="onRemoveImage" data-index="{{index}}"><text>×</text></view>
+        <view class="img-cover-badge" wx:if="{{index === 0}}"><text>封面</text></view>
+      </view>
+      <view class="img-add" bindtap="onChooseImage" wx:if="{{selectedImages.length < 9}}">
+        <text class="add-icon">📷</text>
+        <text class="add-text">{{selectedImages.length}}/9</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 商品信息 -->
+  <view class="form-section">
+    <!-- 标题 -->
+    <view class="form-item">
+      <textarea class="title-input" placeholder="描述一下你的宝贝（标题会更吸引买家哦）" value="{{title}}" bindinput="onInput" data-field="title" maxlength="50" auto-height />
+    </view>
+
+    <!-- 详细描述 -->
+    <view class="form-item">
+      <textarea class="desc-input" placeholder="描述一下宝贝的成色、入手渠道、转手原因..." value="{{description}}" bindinput="onInput" data-field="description" maxlength="500" auto-height />
+    </view>
+  </view>
+
+  <!-- 价格区 -->
+  <view class="price-section">
+    <view class="price-row">
+      <text class="price-label">💰 出售价格</text>
+      <view class="price-input-wrap">
+        <text class="price-symbol">¥</text>
+        <input class="price-input" type="digit" placeholder="0.00" value="{{price}}" bindinput="onInput" data-field="price" />
+      </view>
+    </view>
+    <view class="price-row">
+      <text class="price-label">原价（选填）</text>
+      <view class="price-input-wrap sub">
+        <text class="price-symbol sub">¥</text>
+        <input class="price-input" type="digit" placeholder="0.00" value="{{originalPrice}}" bindinput="onInput" data-field="originalPrice" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 分类选择 -->
+  <view class="option-section">
+    <view class="option-row" bindtap="onShowCategoryPicker">
+      <text class="option-label">📂 分类</text>
+      <view class="option-value-wrap">
+        <text class="option-value {{selectedCategory ? '' : 'placeholder'}}">{{selectedCategory || '选择分类'}}</text>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 成色 -->
+    <view class="option-row">
+      <text class="option-label">✨ 成色</text>
+      <view class="condition-tags">
+        <text class="cond-tag {{condition === '全新' ? 'cond-active' : ''}}" bindtap="onCondition" data-val="全新">全新</text>
+        <text class="cond-tag {{condition === '几乎全新' ? 'cond-active' : ''}}" bindtap="onCondition" data-val="几乎全新">几乎全新</text>
+        <text class="cond-tag {{condition === '轻微使用痕迹' ? 'cond-active' : ''}}" bindtap="onCondition" data-val="轻微使用痕迹">轻微使用</text>
+        <text class="cond-tag {{condition === '明显使用痕迹' ? 'cond-active' : ''}}" bindtap="onCondition" data-val="明显使用痕迹">明显使用</text>
+      </view>
+    </view>
+
+    <!-- 交易方式 -->
+    <view class="option-row">
+      <text class="option-label">🤝 交易方式</text>
+      <view class="condition-tags">
+        <text class="cond-tag {{tradeMethod === '当面交易' ? 'cond-active' : ''}}" bindtap="onTrade" data-val="当面交易">当面交易</text>
+        <text class="cond-tag {{tradeMethod === '邮寄' ? 'cond-active' : ''}}" bindtap="onTrade" data-val="邮寄">邮寄</text>
+        <text class="cond-tag {{tradeMethod === '均可' ? 'cond-active' : ''}}" bindtap="onTrade" data-val="均可">均可</text>
+      </view>
+    </view>
+
+    <!-- 是否议价 -->
+    <view class="option-row">
+      <text class="option-label">💬 是否议价</text>
+      <view class="condition-tags">
+        <text class="cond-tag {{bargain === true ? 'cond-active' : ''}}" bindtap="onBargain" data-val="true">可议价</text>
+        <text class="cond-tag {{bargain === false ? 'cond-active' : ''}}" bindtap="onBargain" data-val="false">一口价</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 发布按钮 -->
+  <view class="publish-section">
+    <view class="draft-tools">
+      <view class="draft-btn" bindtap="onSaveDraft">存草稿</view>
+      <text class="draft-tip">临时离开页面会自动保存</text>
+    </view>
+    <button class="publish-btn {{publishing ? 'disabled' : ''}}" bindtap="onPublish" disabled="{{publishing}}">
+      {{publishing ? '发布中...' : '发布闲置'}}
+    </button>
+  </view>
+
+  <view style="height: 60rpx;"></view>
+</view>
+
+<!-- 分类选择器弹窗 -->
+<view class="picker-mask {{showCategoryPicker ? 'show' : ''}}" bindtap="onHideCategoryPicker">
+  <view class="picker-panel" catchtap="">
+    <view class="picker-header">
+      <text class="picker-title">选择分类</text>
+      <text class="picker-close" bindtap="onHideCategoryPicker">✕</text>
+    </view>
+    <view class="picker-grid">
+      <view
+        class="picker-item {{selectedCategory === item.name ? 'picker-active' : ''}}"
+        wx:for="{{categoryList}}"
+        wx:key="name"
+        bindtap="onPickCategory"
+        data-name="{{item.name}}"
+      >
+        <text class="picker-emoji">{{item.icon}}</text>
+        <text class="picker-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+</view>

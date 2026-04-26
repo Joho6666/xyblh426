@@ -1,0 +1,149 @@
+<!-- pages/profile/profile.wxml - 用户主页 -->
+<view class="profile-page">
+  <!-- 封面区域 -->
+  <view class="profile-cover" style="background-image: url('{{user.coverImage || ''}}');">
+    <view class="profile-cover-overlay"></view>
+    <view class="profile-top">
+      <view class="profile-avatar-wrap">
+        <image class="profile-avatar-img" src="{{user.avatarUrl}}" mode="aspectFill"></image>
+      </view>
+      <text class="profile-nickname">{{user.nickName}}</text>
+      <text class="profile-user-id">ID: {{user.numericId || '未分配'}}</text>
+      <text class="profile-college">{{user.college}}</text>
+    </view>
+  </view>
+
+  <!-- 自我介绍 -->
+  <view class="profile-bio-section" wx:if="{{user.bio}}">
+    <text class="profile-bio">{{user.bio}}</text>
+  </view>
+
+  <!-- 兴趣标签 -->
+  <view class="profile-tags" wx:if="{{user.tags && user.tags.length > 0}}">
+    <view class="tag-item" wx:for="{{user.tags}}" wx:key="*this">
+      <text>{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 统计数据 -->
+  <view class="profile-stats profile-stats-four">
+    <view class="stat-item" bindtap="onFollowingTap">
+      <text class="stat-num">{{followingCount}}</text>
+      <text class="stat-label">关注</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item" bindtap="onFollowerTap">
+      <text class="stat-num">{{followerCount}}</text>
+      <text class="stat-label">粉丝</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num">{{postStatTotal}}</text>
+      <text class="stat-label">帖子</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num">{{goodsStatTotal}}</text>
+      <text class="stat-label">闲置</text>
+    </view>
+  </view>
+
+  <!-- 操作按钮（非自己） -->
+  <view class="profile-actions" wx:if="{{!isMe}}">
+    <view class="action-follow-btn {{isFollowing ? 'followed' : ''}}" bindtap="onToggleFollow">
+      <text>{{isFollowing ? '已关注' : '+ 关注'}}</text>
+    </view>
+    <view class="action-msg-btn" bindtap="onSendMessage">
+      <text>发私信</text>
+    </view>
+    <view class="action-ban-btn" wx:if="{{isAdmin}}" bindtap="onAdminBanUser">
+      <text>封禁此人</text>
+    </view>
+  </view>
+
+  <!-- 动态 / 闲置 -->
+  <view class="profile-segment">
+    <view
+      class="seg-item {{profileTab === 'posts' ? 'seg-active' : ''}}"
+      bindtap="onProfileTab"
+      data-tab="posts"
+    >TA的动态</view>
+    <view
+      class="seg-item {{profileTab === 'goods' ? 'seg-active' : ''}}"
+      bindtap="onProfileTab"
+      data-tab="goods"
+    >TA的闲置</view>
+  </view>
+
+  <view class="profile-list-wrap" wx:if="{{profileTab === 'posts'}}">
+    <view class="empty-state" wx:if="{{posts.length === 0}}">
+      <text class="empty-icon">📝</text>
+      <text class="empty-text">暂无动态</text>
+    </view>
+    <view
+      class="post-card-mini"
+      wx:for="{{posts}}"
+      wx:key="_id"
+      bindtap="goToDetail"
+      data-id="{{item._id}}"
+    >
+      <image
+        wx:if="{{item.coverUrl}}"
+        class="post-card-thumb"
+        src="{{item.coverUrl}}"
+        mode="aspectFill"
+        lazy-load
+      />
+      <view class="post-card-main">
+        <text class="post-card-content">{{item.title || item.content}}</text>
+        <view class="post-card-footer">
+          <view class="post-card-stat">
+            <text>❤️ {{item.likes || 0}}</text>
+          </view>
+          <view class="post-card-stat">
+            <text>💬 {{item.comments || 0}}</text>
+          </view>
+          <text class="post-card-time">{{item.time}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="profile-list-footer" wx:if="{{posts.length > 0}}">
+      <text wx:if="{{postsLoadingMore}}">加载中...</text>
+      <text wx:elif="{{!postsHasMore}}">— 没有更多了 —</text>
+    </view>
+  </view>
+
+  <view class="profile-list-wrap" wx:else>
+    <view class="empty-state" wx:if="{{goods.length === 0}}">
+      <text class="empty-icon">📦</text>
+      <text class="empty-text">暂无闲置商品</text>
+    </view>
+    <view
+      class="goods-card-mini"
+      wx:for="{{goods}}"
+      wx:key="_id"
+      bindtap="goToGoodsDetail"
+      data-id="{{item._id}}"
+    >
+      <image
+        wx:if="{{item.coverUrl}}"
+        class="goods-card-thumb"
+        src="{{item.coverUrl}}"
+        mode="aspectFill"
+        lazy-load
+      />
+      <view wx:else class="goods-card-thumb goods-card-thumb-placeholder">
+        <text>📦</text>
+      </view>
+      <view class="goods-card-main">
+        <text class="goods-card-title">{{item.title}}</text>
+        <text class="goods-card-price">¥{{item.price}}</text>
+        <text class="goods-card-time">{{item.time}}</text>
+      </view>
+    </view>
+    <view class="profile-list-footer" wx:if="{{goods.length > 0}}">
+      <text wx:if="{{goodsLoadingMore}}">加载中...</text>
+      <text wx:elif="{{!goodsHasMore}}">— 没有更多了 —</text>
+    </view>
+  </view>
+</view>

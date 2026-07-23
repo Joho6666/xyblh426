@@ -1,0 +1,52 @@
+<view class="page">
+  <view class="block">
+    <text class="h1">编辑公告</text>
+    <input class="input title-input" placeholder="请输入公告标题（必填）" value="{{title}}" data-field="title" bindinput="onInput" maxlength="40" />
+    <textarea class="textarea" placeholder="请输入公告内容（必填）" value="{{content}}" data-field="content" bindinput="onInput" maxlength="500" />
+    <view class="image-tools">
+      <view class="upload-btn" catchtap="onChooseImages">+ 添加图片（最多10张）</view>
+      <text class="upload-hint">当前 {{imageItems.length}} / 10</text>
+    </view>
+    <text class="upload-hint-empty" wx:if="{{!imageItems.length}}">未添加图片，可点击上方按钮新增</text>
+    <scroll-view class="image-scroll" scroll-x wx:if="{{imageItems.length}}">
+      <view class="image-track">
+        <view class="img-card" wx:for="{{imageItems}}" wx:key="src">
+          <image class="img" src="{{item.src}}" mode="aspectFill"></image>
+          <view class="img-del" catchtap="onRemoveImage" data-index="{{index}}">×</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="row">
+      <text>优先级</text>
+      <picker mode="selector" range="{{['普通','重要','紧急']}}" bindchange="onPickPriority">
+        <text class="picker">{{priority}}</text>
+      </picker>
+    </view>
+    <view class="row">
+      <text>置顶</text>
+      <switch checked="{{pinTop}}" bindchange="onSwitchPin" />
+    </view>
+
+    <text class="label">投放校区（可多选）</text>
+    <view class="campus-actions">
+      <text class="campus-count">已选 {{campusIds.length}} / {{campusOptions.length}}</text>
+      <view class="campus-action-btn" catchtap="onSelectAllCampuses">全选</view>
+      <view class="campus-action-btn" catchtap="onClearAllCampuses">清空</view>
+    </view>
+    <view class="campus-wrap">
+      <view
+        class="campus-chip {{item.selected ? 'campus-chip-on' : ''}}"
+        wx:for="{{campusOptions}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        catchtap="onToggleCampus"
+      >
+        <view class="campus-mark">{{item.selected ? '✓' : ''}}</view>
+        <view class="campus-name">{{item.name}}</view>
+      </view>
+    </view>
+
+    <button class="btn" loading="{{saving}}" bindtap="onSave">保存修改</button>
+  </view>
+</view>

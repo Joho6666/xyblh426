@@ -1,0 +1,26 @@
+<view class="page-container">
+  <view class="hint-bar">
+    <text>以下为你主动拉黑的用户。解除拉黑后需重新关注才能恢复关注关系。</text>
+  </view>
+  <view class="empty-state" wx:if="{{!loading && list.length === 0}}">
+    <text class="empty-icon">✓</text>
+    <text class="empty-text">暂无拉黑用户</text>
+  </view>
+  <view class="user-list" wx:if="{{list.length > 0}}">
+    <view class="user-card" wx:for="{{list}}" wx:key="_openid">
+      <view class="user-card-left" bindtap="onOpenProfile" data-openid="{{item._openid}}">
+        <image class="user-card-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+        <view class="user-card-info">
+          <text class="user-card-name">{{item.nickName}}</text>
+          <text class="user-card-college" wx:if="{{item.college}}">{{item.college}}</text>
+        </view>
+      </view>
+      <view class="btn-unblock" catchtap="onUnblock" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+        <text>解除拉黑</text>
+      </view>
+    </view>
+  </view>
+  <view class="load-status" wx:if="{{loading}}">
+    <text class="load-text">加载中...</text>
+  </view>
+</view>

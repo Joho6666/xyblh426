@@ -1,0 +1,25 @@
+.dsb-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  background: var(--surface-container-lowest);
+  border-radius: 999rpx;
+  margin-bottom: 20rpx;
+}
+.dsb-icon {
+  width: 32rpx;
+  height: 32rpx;
+  opacity: 0.4;
+}
+.dsb-input {
+  flex: 1;
+  font-size: 28rpx;
+}
+.dsb-clear {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--surface-container-low);
+  font-size: 22rpx;
+  color: var(--on-surface-variant);
+}

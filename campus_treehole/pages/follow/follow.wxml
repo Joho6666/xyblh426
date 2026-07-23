@@ -1,5 +1,39 @@
 <!-- pages/follow/follow.wxml - 关注与粉丝列表 -->
 <view class="page-container">
+  <view class="quick-share" wx:if="{{mode === 'chat' && (shareAuthorCard || recentChatList.length > 0)}}">
+    <view class="quick-share-title">快捷发送</view>
+    <view class="user-card author-card" wx:if="{{shareAuthorCard}}">
+      <view class="user-card-left" bindtap="onQuickChatTap" data-openid="{{shareAuthorCard._openid}}" data-nickname="{{shareAuthorCard.nickName}}">
+        <image class="user-card-avatar" src="{{shareAuthorCard.avatarUrl}}" mode="aspectFill"></image>
+        <view class="user-card-info">
+          <text class="user-card-name">{{shareAuthorCard.nickName}}</text>
+          <text class="user-card-college">帖子作者</text>
+        </view>
+      </view>
+      <view class="user-card-actions">
+        <view class="btn-chat" catchtap="onQuickChatTap" data-openid="{{shareAuthorCard._openid}}" data-nickname="{{shareAuthorCard.nickName}}">
+          <text>💬</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="quick-share-sub" wx:if="{{recentChatList.length > 0}}">最近私信</view>
+    <view class="user-card" wx:for="{{recentChatList}}" wx:key="_openid">
+      <view class="user-card-left" bindtap="onQuickChatTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+        <image class="user-card-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+        <view class="user-card-info">
+          <text class="user-card-name">{{item.nickName}}</text>
+          <text class="user-card-college">{{item.college}}</text>
+        </view>
+      </view>
+      <view class="user-card-actions">
+        <view class="btn-chat" catchtap="onQuickChatTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">
+          <text>💬</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- Tab 栏 -->
   <view class="tab-bar">
     <view
@@ -56,23 +90,19 @@
     </view>
   </view>
 
-  <!-- 发现 - 搜索用户 -->
-  <view class="user-list" wx:if="{{currentTab === 2}}">
-    <view class="search-bar">
-      <image class="search-icon" src="/images/icon_search.png" mode="aspectFit"></image>
-      <input class="search-input" placeholder="搜索用户..." bindinput="onSearchInput" value="{{searchKeyword}}" />
-      <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">清除</view>
-    </view>
+  <!-- 发现 - 搜索用户（hidden 保留组件实例，避免 wx:if 反复销毁输入框导致异常） -->
+  <view class="user-list" hidden="{{currentTab !== 2}}">
+    <discover-search-bar bind:change="onDiscoverSearchChange" />
     <view class="search-hint">
-      <text>支持按昵称或学院搜索，向下拉也可以刷新推荐结果</text>
+      <text>支持按昵称、学院或用户 ID 搜索，向下拉也可以刷新推荐结果</text>
     </view>
     <view class="load-status" wx:if="{{searchLoading}}">
       <text class="load-text">搜索中...</text>
     </view>
     <view class="empty-state" wx:elif="{{searchList.length === 0}}">
-      <text class="empty-icon">{{searchKeyword ? '🔎' : '✨'}}</text>
-      <text class="empty-text">{{searchKeyword ? '没有找到相关用户' : '这里会推荐活跃用户'}}</text>
-      <text class="empty-sub">{{searchKeyword ? '试试换个昵称或学院关键词' : '输入关键词可以更快找到同学'}}</text>
+      <text class="empty-icon">{{discoverUserQuery ? '🔎' : '✨'}}</text>
+      <text class="empty-text">{{discoverUserQuery ? '没有找到相关用户' : '这里会推荐活跃用户'}}</text>
+      <text class="empty-sub">{{discoverUserQuery ? '试试换个昵称、学院或 ID' : '输入关键词可以更快找到同学'}}</text>
     </view>
     <view class="user-card" wx:for="{{searchList}}" wx:key="_openid">
       <view class="user-card-left" bindtap="onUserTap" data-openid="{{item._openid}}" data-nickname="{{item.nickName}}">

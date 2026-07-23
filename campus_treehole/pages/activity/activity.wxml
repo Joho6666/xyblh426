@@ -1,0 +1,175 @@
+<view class="act-page">
+  <view class="act-banner-wrap" wx:if="{{zoneSlides.length > 0}}">
+    <swiper
+      class="act-banner-swiper"
+      indicator-dots="{{zoneSlides.length > 1}}"
+      indicator-color="rgba(255,255,255,0.45)"
+      indicator-active-color="#ffffff"
+      autoplay="{{zoneSlides.length > 1}}"
+      interval="5000"
+      circular="{{zoneSlides.length > 1}}"
+      duration="400"
+    >
+      <swiper-item wx:for="{{zoneSlides}}" wx:key="index">
+        <view class="act-banner-slide" bindtap="onBannerTap" data-index="{{index}}">
+          <image wx:if="{{item.displayImage}}" class="act-banner-bg" src="{{item.displayImage}}" mode="aspectFill" />
+          <view wx:else class="act-banner-placeholder"></view>
+          <view class="act-banner-shade"></view>
+          <view class="act-banner-body">
+            <text class="act-banner-title" wx:if="{{item.title}}">{{item.title}}</text>
+            <text class="act-banner-sub" wx:if="{{item.subtitle}}">{{item.subtitle}}</text>
+            <view class="act-banner-cta">{{item.ctaText || '了解详情'}}</view>
+          </view>
+        </view>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="act-banner-empty" wx:else>
+    <text class="act-empty-icon">📣</text>
+    <text class="act-empty-text">暂无活动横幅</text>
+    <text class="act-empty-sub">管理员可在「我 → 活动专区配置」发布横屏公告</text>
+  </view>
+
+  <view class="act-section-head">
+    <text class="act-section-title">活动动态</text>
+    <text class="act-section-sub">仅展示本期活动帖；活动结束后将转为普通帖，专区清空以便下一期</text>
+  </view>
+
+  <view class="act-search">
+    <view class="act-search-ico"></view>
+    <input
+      class="act-search-input"
+      placeholder="搜索活动动态标题或正文"
+      placeholder-class="act-search-ph"
+      value="{{searchKeyword}}"
+      bindinput="onSearchInput"
+      bindconfirm="onSearchConfirm"
+      confirm-type="search"
+    />
+    <view class="act-search-clear" wx:if="{{searchKeyword}}" catchtap="onClearSearch">清除</view>
+  </view>
+
+  <view class="act-hint" wx:if="{{!loading && !loadError}}">
+    <text>{{searchKeyword ? '正在搜索…' : '下拉刷新 · 上拉加载更多'}}</text>
+  </view>
+
+  <view class="waterfall">
+    <view class="wf-col">
+      <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+        <view class="wf-activity-tag">活动</view>
+        <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
+        </view>
+        <view wx:elif="{{item.videos && item.videos.length > 0}}" class="wf-video-wrap">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <video class="wf-video-el" src="{{item.videos[0]}}" object-fit="cover" show-center-play-btn="{{false}}" show-play-btn="{{false}}" controls="{{false}}" muted="{{true}}" bindloadedmetadata="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}"></video>
+          <view class="video-badge"><text>视频</text></view>
+        </view>
+        <view wx:else class="wf-text-card">
+          <text class="wf-text-only">{{item.content}}</text>
+        </view>
+        <view class="wf-info">
+          <text class="wf-title">{{item.title || item.content}}</text>
+          <view class="wf-footer">
+            <view class="wf-author">
+              <image class="wf-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" lazy-load />
+              <text class="wf-name">{{item.nickname || '匿名'}}</text>
+            </view>
+            <view class="wf-actions">
+              <view class="wf-favor {{item.isFavored ? 'favored' : ''}}" catchtap="onFavorTap" data-id="{{item._id}}">
+                <text class="favor-icon">{{item.isFavored ? '★' : '☆'}}</text>
+              </view>
+              <view class="wf-like {{item.isLiked ? 'liked' : ''}}" catchtap="onLikeTap" data-id="{{item._id}}">
+                <text class="like-icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
+                <text class="like-num">{{item.likes || 0}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="wf-col">
+      <view class="wf-card wf-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+        <view class="wf-activity-tag">活动</view>
+        <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
+        </view>
+        <view wx:elif="{{item.videos && item.videos.length > 0}}" class="wf-video-wrap">
+          <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
+          <video class="wf-video-el" src="{{item.videos[0]}}" object-fit="cover" show-center-play-btn="{{false}}" show-play-btn="{{false}}" controls="{{false}}" muted="{{true}}" bindloadedmetadata="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}"></video>
+          <view class="video-badge"><text>视频</text></view>
+        </view>
+        <view wx:else class="wf-text-card">
+          <text class="wf-text-only">{{item.content}}</text>
+        </view>
+        <view class="wf-info">
+          <text class="wf-title">{{item.title || item.content}}</text>
+          <view class="wf-footer">
+            <view class="wf-author">
+              <image class="wf-avatar" src="{{item.avatar || '/images/avatar_default.png'}}" lazy-load />
+              <text class="wf-name">{{item.nickname || '匿名'}}</text>
+            </view>
+            <view class="wf-actions">
+              <view class="wf-favor {{item.isFavored ? 'favored' : ''}}" catchtap="onFavorTap" data-id="{{item._id}}">
+                <text class="favor-icon">{{item.isFavored ? '★' : '☆'}}</text>
+              </view>
+              <view class="wf-like {{item.isLiked ? 'liked' : ''}}" catchtap="onLikeTap" data-id="{{item._id}}">
+                <text class="like-icon">{{item.isLiked ? '❤️' : '🤍'}}</text>
+                <text class="like-num">{{item.likes || 0}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="load-status" wx:if="{{loading || searchLoading}}">
+    <text class="load-text">加载中...</text>
+  </view>
+  <view class="load-status empty" wx:elif="{{loadError}}">
+    <text class="load-text">{{loadError}}</text>
+  </view>
+  <view class="load-status" wx:elif="{{!hasMore && posts.length > 0}}">
+    <text class="load-text">已经到底了</text>
+  </view>
+  <view class="load-status empty" wx:elif="{{!loading && posts.length === 0}}">
+    <text class="empty-emoji">📅</text>
+    <text class="load-text">{{searchKeyword ? '没有找到相关活动' : '本期暂无参与帖，请在活动进行中发布并选择「校园活动」分类'}}</text>
+  </view>
+
+  <view style="height: 120rpx;"></view>
+</view>
+
+<view class="act-detail-mask" wx:if="{{showDetail}}" catchtap="onCloseDetail" catchtouchmove="noop">
+  <view class="act-detail-sheet" catchtap="noop">
+    <view class="act-detail-grab"></view>
+    <scroll-view class="act-detail-scroll" scroll-y enhanced show-scrollbar="{{true}}">
+      <text class="act-detail-title">{{detailSlide.title || '活动说明'}}</text>
+      <view class="act-detail-block" wx:if="{{detailSlide.subtitle}}">
+        <text class="act-detail-label">导语</text>
+        <text class="act-detail-text">{{detailSlide.subtitle}}</text>
+      </view>
+      <view class="act-detail-block" wx:if="{{detailSlide.content}}">
+        <text class="act-detail-label">活动内容</text>
+        <text class="act-detail-text">{{detailSlide.content}}</text>
+      </view>
+      <view class="act-detail-block" wx:if="{{detailSlide.activityTime}}">
+        <text class="act-detail-label">活动时间</text>
+        <text class="act-detail-text">{{detailSlide.activityTime}}</text>
+      </view>
+      <view class="act-detail-block" wx:if="{{detailSlide.participation}}">
+        <text class="act-detail-label">参与方式</text>
+        <text class="act-detail-text">{{detailSlide.participation}}</text>
+      </view>
+      <view class="act-detail-block" wx:if="{{detailSlide.rewards}}">
+        <text class="act-detail-label">活动奖励</text>
+        <text class="act-detail-text">{{detailSlide.rewards}}</text>
+      </view>
+    </scroll-view>
+    <view class="act-detail-close" bindtap="onCloseDetail">关闭</view>
+  </view>
+</view>

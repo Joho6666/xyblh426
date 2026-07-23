@@ -10,7 +10,13 @@
   </view>
 
   <scroll-view class="chat-body" scroll-y scroll-into-view="{{scrollToMsg}}" scroll-with-animation bindtap="onBodyTap">
-    <view class="chat-empty-state" wx:if="{{loadError}}">
+    <view class="chat-empty-state" wx:if="{{chatBlocked}}">
+      <text class="chat-empty-icon">🚫</text>
+      <text class="chat-empty-title">暂时无法私信</text>
+      <text class="chat-empty-sub">{{chatBlockedTip}}</text>
+    </view>
+
+    <view class="chat-empty-state" wx:elif="{{loadError}}">
       <text class="chat-empty-icon">⚠️</text>
       <text class="chat-empty-title">消息加载失败</text>
       <text class="chat-empty-sub">{{loadError}}</text>
@@ -65,7 +71,7 @@
   </scroll-view>
 
   <!-- 录音浮层（全屏拦截，避免底层滑动） -->
-  <view class="recording-overlay" wx:if="{{isRecording}}" catchtouchmove="onRecordingOverlayMove">
+  <view class="recording-overlay" wx:if="{{isRecording && !chatBlocked}}" catchtouchmove="onRecordingOverlayMove">
     <view class="recording-box {{recordingCancelHint ? 'recording-box-cancel' : ''}}">
       <view class="recording-mic-wrap" wx:if="{{recordingCancelHint}}">
         <text class="recording-cancel-icon">✕</text>
@@ -91,7 +97,7 @@
     </view>
   </view>
 
-  <view class="pending-share" wx:if="{{pendingShare}}">
+  <view class="pending-share" wx:if="{{pendingShare && !chatBlocked}}">
     <view class="pending-share-card" bindtap="onOpenShareCard" data-type="{{pendingShare.type}}" data-id="{{pendingShare.id}}">
       <image class="pending-share-cover" wx:if="{{pendingShare.displayImage || pendingShare.image}}" src="{{pendingShare.displayImage || pendingShare.image}}" mode="aspectFill"></image>
       <view class="pending-share-main">
@@ -105,7 +111,7 @@
   </view>
 
   <!-- 输入栏 -->
-  <view class="chat-input-bar">
+  <view class="chat-input-bar" wx:if="{{!chatBlocked}}">
     <view class="tool-btn tool-btn-mode" bindtap="onToggleVoiceMode">
       <text class="tool-mode-emoji">{{voiceMode ? '⌨️' : '🎤'}}</text>
       <text class="tool-mode-label">{{voiceMode ? '键盘' : '语音'}}</text>
@@ -137,7 +143,7 @@
     <view class="chat-send-btn {{(!inputText.trim() || sending || voiceMode) ? 'chat-send-btn-disabled' : ''}}" bindtap="onSend" wx:if="{{!voiceMode}}">{{sending ? '...' : '发送'}}</view>
   </view>
 
-  <view class="action-panel" wx:if="{{showActionPanel}}">
+  <view class="action-panel" wx:if="{{!chatBlocked && showActionPanel}}">
     <view class="action-item" bindtap="onChooseFromAlbum">
       <view class="action-icon">🖼️</view>
       <text class="action-label">相册</text>
@@ -148,7 +154,7 @@
     </view>
   </view>
 
-  <view class="emoji-panel" wx:if="{{showEmojiPanel}}">
+  <view class="emoji-panel" wx:if="{{!chatBlocked && showEmojiPanel}}">
     <view class="emoji-grid">
       <view class="emoji-item" wx:for="{{emojis}}" wx:key="*this" bindtap="onEmojiTap" data-emoji="{{item}}">{{item}}</view>
     </view>

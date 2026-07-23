@@ -1,6 +1,28 @@
 /* pages/follow/follow.wxss - 关注与粉丝样式 */
 .page-container { padding: 20rpx 28rpx; }
 
+.quick-share {
+  margin-bottom: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.quick-share-title {
+  font-size: 24rpx;
+  color: var(--on-surface-variant);
+  font-weight: 600;
+  padding-left: 8rpx;
+}
+.quick-share-sub {
+  font-size: 22rpx;
+  color: var(--outline-variant);
+  padding-left: 8rpx;
+  margin-top: 4rpx;
+}
+.author-card {
+  border: 1px solid rgba(66, 96, 137, 0.22);
+}
+
 /* Tab 栏 */
 .tab-bar {
   display: flex; background: var(--surface-container-low);

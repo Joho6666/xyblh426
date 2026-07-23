@@ -1,0 +1,2625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+  <title>校园便利盒 - 管理后台</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1E40AF', 'on-primary': '#FFFFFF',
+            secondary: '#3B82F6', accent: '#D97706',
+            surface: '#F8FAFC', 'on-surface': '#0F172A', 'on-surface-variant': '#64748B',
+            error: '#DC2626', muted: '#E9EEF6', border: '#DBEAFE',
+            sidebar: '#0F172A', 'sidebar-hover': '#1E293B'
+          },
+          fontFamily: { headline: ['Fira Sans', 'system-ui', 'sans-serif'], body: ['Fira Sans', 'system-ui', 'sans-serif'], mono: ['Fira Code', 'monospace'] },
+          boxShadow: { card: '0 1px 3px rgba(15,23,42,.06), 0 8px 24px rgba(30,64,175,.08)' }
+        },
+      },
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body { min-height: 100dvh; overscroll-behavior: none; background: #F8FAFC; }
+    #toast { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
+    .panel { display: none; animation: fadeIn .2s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .badge-pending { background: #FEF3C7; color: #92400E; }
+    .badge-active { background: #D1FAE5; color: #065F46; }
+    .badge-banned { background: #FEE2E2; color: #991B1B; }
+    .badge-deleted { background: #F1F5F9; color: #64748B; }
+    .badge-admin { background: #DBEAFE; color: #1E40AF; }
+    .badge-resolved { background: #D1FAE5; color: #065F46; }
+    .badge-dismissed { background: #E2E8F0; color: #475569; }
+    .badge-muted { background: #FEF3C7; color: #92400E; }
+    .badge-nolike { background: #FCE7F3; color: #9D174D; }
+    .badge-rejected { background: #FEE2E2; color: #B91C1C; }
+    .stat-card { transition: transform .15s, box-shadow .2s; border-left: 3px solid #1E40AF; }
+    .stat-card:hover { box-shadow: 0 8px 24px rgba(30,64,175,.12); }
+    .stat-card:active { transform: scale(0.98); }
+    .stat-card.accent { border-left-color: #D97706; }
+    .stat-card.danger { border-left-color: #DC2626; }
+    .fade-out { opacity: 0; transform: scale(0.95); transition: all 0.3s; }
+    .action-sheet { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .action-sheet.hidden-sheet { transform: translateY(100%); }
+    .nav-d { cursor: pointer; transition: background .15s, color .15s; }
+    .nav-d.active { background: rgba(59,130,246,.2); color: #93C5FD; font-weight: 600; }
+    .nav-section { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748B; padding: 8px 12px 4px; }
+    .filter-select, .filter-input { transition: border-color .15s, box-shadow .15s; }
+    .filter-select:focus, .filter-input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    .card-action { min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .1s, opacity .15s; }
+    .card-action:active { transform: scale(0.96); }
+    .post-card { box-shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 24px rgba(15,23,42,.04); transition: box-shadow .2s; }
+    .post-card:hover { box-shadow: 0 8px 28px rgba(30,64,175,.1); }
+    .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; max-width: 100%; }
+    @media (min-width: 640px) { .img-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .campus-chip { font-size: 10px; padding: 4px 10px; border-radius: 999px; background: #EFF6FF; color: #1D4ED8; border: 1px solid #DBEAFE; white-space: nowrap; }
+    .panel-wrap { width: 100%; max-width: 56rem; }
+    .form-card { width: 100%; max-width: 42rem; }
+    .campus-picker-box { border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 12px; background: #F8FAFC; }
+    .campus-picker-box summary { cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; list-style: none; }
+    .campus-picker-box summary::-webkit-details-marker { display: none; }
+    .campus-chips-scroll { max-height: 140px; overflow-y: auto; padding-top: 8px; }
+    .upload-zone { border: 2px dashed #CBD5E1; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; background: #FAFBFC; }
+    .upload-zone:hover { border-color: #3B82F6; background: #EFF6FF; }
+    .upload-zone.uploading { opacity: .7; pointer-events: none; }
+    .thumb-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .thumb-item { position: relative; width: 72px; height: 72px; border-radius: 10px; overflow: hidden; border: 1px solid #E2E8F0; flex-shrink: 0; }
+    .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-remove { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 14px; line-height: 20px; text-align: center; cursor: pointer; border: none; }
+    .slide-card { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 14px; align-items: start; }
+    @media (max-width: 640px) { .slide-card { grid-template-columns: 1fr; } }
+    .slide-preview { aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: #E2E8F0; border: 1px solid #E2E8F0; min-height: 100px; }
+    .slide-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .ann-item-content { white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
+    .list-card { word-break: break-word; overflow-wrap: anywhere; }
+    main { overflow-x: hidden; }
+    @media (min-width: 769px) { .mobile-nav, .mobile-header, .mobile-more-btn { display: none !important; } }
+    @media (max-width: 768px) {
+      .desktop-sidebar { display: none !important; }
+      main { margin-left: 0 !important; padding-bottom: 88px !important; }
+      .mobile-header { display: flex !important; }
+    }
+    @media (prefers-reduced-motion: reduce) { .panel, .stat-card, .card-action { animation: none; transition: none; } }
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 128px; padding-top: 4px; }
+    .bar-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .bar-fill { width: 100%; max-width: 36px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #60A5FA, #1E40AF); min-height: 4px; transition: height .35s ease; }
+    .bar-fill.users { background: linear-gradient(180deg, #34D399, #059669); }
+    .bar-fill.posts { background: linear-gradient(180deg, #FBBF24, #D97706); }
+    .bar-label { font-size: 9px; color: #94A3B8; font-family: 'Fira Code', monospace; }
+    .bar-val { font-size: 9px; color: #64748B; font-weight: 600; }
+    .funnel-row { margin-bottom: 10px; }
+    .funnel-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: #475569; }
+    .funnel-track { height: 22px; background: #EFF6FF; border-radius: 8px; overflow: hidden; }
+    .funnel-bar { height: 100%; background: linear-gradient(90deg, #1E40AF, #3B82F6); border-radius: 8px; min-width: 2%; transition: width .4s ease; }
+    .dist-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11px; }
+    .dist-bar { flex: 1; height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; }
+    .dist-fill { height: 100%; background: #3B82F6; border-radius: 4px; }
+    .insight-item { font-size: 12px; color: #334155; padding: 8px 10px; background: #F8FAFC; border-left: 3px solid #3B82F6; border-radius: 0 8px 8px 0; margin-bottom: 6px; }
+    .line-chart-wrap { width: 100%; overflow-x: auto; }
+    .line-chart-wrap svg { display: block; min-width: 520px; width: 100%; height: auto; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 10px; color: #64748B; margin-bottom: 8px; }
+    .chart-legend span::before { content: ''; display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+    .hist-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .hist-table th, .hist-table td { padding: 6px 8px; border-bottom: 1px solid #F1F5F9; text-align: left; }
+    .hist-table th { color: #64748B; font-weight: 600; background: #F8FAFC; }
+    .persona-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22C55E; display: inline-block; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+    /* Dark Mode */
+    .dark body, .dark { background: #0F172A !important; color: #E2E8F0 !important; }
+    .dark .bg-white, .dark .bg-surface { background: #1E293B !important; }
+    .dark .bg-gray-50, .dark .bg-slate-50, .dark .bg-gray-100 { background: #334155 !important; }
+    .dark .text-on-surface, .dark .text-slate-800, .dark .text-gray-700, .dark .text-gray-600 { color: #E2E8F0 !important; }
+    .dark .text-gray-400, .dark .text-gray-500, .dark .text-slate-400, .dark .text-slate-500 { color: #94A3B8 !important; }
+    .dark .border-border, .dark .border-gray-100, .dark .border-slate-100, .dark .border-gray-200 { border-color: #334155 !important; }
+    .dark .shadow-card { box-shadow: 0 2px 8px rgba(0,0,0,.3) !important; }
+    .dark .post-card, .dark .list-card { background: #1E293B !important; border-color: #334155 !important; }
+    .dark .stat-card { background: #1E293B !important; border-color: #334155 !important; }
+    .dark input, .dark select, .dark textarea { background: #1E293B !important; color: #E2E8F0 !important; border-color: #475569 !important; }
+    .dark #action-sheet { background: #1E293B !important; }
+    .dark .campus-chip { background: #1E3A5F !important; color: #93C5FD !important; border-color: #1E3A5F !important; }
+    .dark .dist-bar { background: #334155 !important; }
+    .dark .funnel-track { background: #334155 !important; }
+  </style>
+</head>
+
+<body class="bg-surface font-body text-on-surface antialiased">
+
+<!-- Toast -->
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl text-sm font-bold shadow-lg pointer-events-none opacity-0 translate-y-[-20px]"></div>
+
+<!-- Connection Status -->
+<div id="connection-status" class="fixed top-0 left-0 w-full bg-blue-500 text-white text-center py-1.5 text-xs font-bold z-[100]">正在连接...</div>
+
+<div class="flex min-h-screen">
+
+  <!-- ===== Desktop Sidebar (ui-ux-pro-max: Data-Dense Dashboard) ===== -->
+  <aside class="desktop-sidebar w-64 bg-sidebar text-slate-300 flex flex-col fixed top-0 left-0 h-full z-50 shadow-xl">
+    <div class="p-5 border-b border-slate-700/80">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-blue-900/40">
+          <span class="material-symbols-outlined text-white text-xl">admin_panel_settings</span>
+        </div>
+        <div>
+          <div class="font-headline font-bold text-sm text-white tracking-tight">校园便利盒</div>
+          <div class="text-[10px] text-slate-400 font-mono">Admin v7.0</div>
+        </div>
+      </div>
+    </div>
+    <div class="px-3 pt-3 pb-1">
+      <label class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold px-2">校区筛选</label>
+      <select id="global-campus-filter" onchange="onGlobalCampusChange()" class="filter-select mt-1.5 w-full text-xs rounded-lg bg-sidebar-hover border border-slate-600 text-slate-200 px-2.5 py-2 cursor-pointer">
+        <option value="">全部校区</option>
+      </select>
+    </div>
+    <nav class="flex-1 p-2 overflow-y-auto no-scrollbar" id="desktop-nav">
+      <div class="nav-section">概览</div>
+      <div class="nav-d active flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-sidebar-hover" onclick="go('dashboard',this)">
+        <span class="material-symbols-outlined text-xl">dashboard</span>数据看板
+      </div>
+      <div class="nav-section mt-2">内容审核</div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('posts',this)">
+        <span class="material-symbols-outlined text-xl">dynamic_feed</span>帖子
+        <span id="dbadge-posts" class="ml-auto text-[10px] bg-accent text-white min-w-[18px] text-center px-1.5 py-0.5 rounded-full hidden font-mono">0</span>
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('goods',this)">
+        <span class="material-symbols-outlined text-xl">storefront</span>集市
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('comments',this)">
+        <span class="material-symbols-outlined text-xl">chat</span>评论
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('reports',this)">
+        <span class="material-symbols-outlined text-xl">flag</span>举报
+        <span id="dbadge-reports" class="ml-auto text-[10px] bg-error text-white min-w-[18px] text-center px-1.5 py-0.5 rounded-full hidden font-mono">0</span>
+      </div>
+      <div class="nav-section mt-2">运营配置</div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('announcements',this)">
+        <span class="material-symbols-outlined text-xl">campaign</span>公告
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('activity',this)">
+        <span class="material-symbols-outlined text-xl">celebration</span>活动专区
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('referral',this)">
+        <span class="material-symbols-outlined text-xl">qr_code_2</span>员工推广
+      </div>
+      <div class="nav-section mt-2">用户</div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('users',this)">
+        <span class="material-symbols-outlined text-xl">group</span>用户管理
+      </div>
+      <div class="nav-section mt-2">系统</div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('auditlog',this)">
+        <span class="material-symbols-outlined text-xl">history</span>操作日志
+      </div>
+      <div class="nav-d flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm hover:bg-sidebar-hover" onclick="go('settings',this)">
+        <span class="material-symbols-outlined text-xl">settings</span>系统设置
+      </div>
+    </nav>
+    <div class="p-3 border-t border-slate-700/80 space-y-2">
+      <button onclick="toggleDarkMode()" class="w-full flex items-center justify-center gap-1.5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-semibold transition cursor-pointer">
+        <span class="material-symbols-outlined text-base">dark_mode</span>切换主题
+      </button>
+      <button onclick="loadAllData()" class="w-full flex items-center justify-center gap-1.5 py-2.5 bg-primary/90 hover:bg-primary text-white rounded-lg text-xs font-semibold transition cursor-pointer">
+        <span class="material-symbols-outlined text-base">refresh</span>刷新全部
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== Mobile Header ===== -->
+  <div class="mobile-header hidden fixed top-0 left-0 right-0 h-12 bg-white/95 backdrop-blur-xl border-b border-border z-40 items-center justify-between px-4">
+    <span class="font-headline font-bold text-sm" id="mobile-title">数据看板</span>
+    <div class="flex items-center gap-1">
+      <button type="button" onclick="openMobileMore()" class="p-1.5 rounded-lg cursor-pointer" title="更多"><span class="material-symbols-outlined text-xl text-slate-600">menu</span></button>
+      <button type="button" onclick="loadAllData()" class="p-1.5 rounded-lg cursor-pointer"><span class="material-symbols-outlined text-xl text-primary">refresh</span></button>
+    </div>
+  </div>
+
+  <!-- ===== Mobile Bottom Nav ===== -->
+  <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl border-t z-40 flex items-center justify-around px-2 safe-area-inset-bottom" style="padding-bottom: env(safe-area-inset-bottom, 0);">
+    <button class="mnav active flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('dashboard',this)">
+      <span class="material-symbols-outlined text-xl">dashboard</span><span class="text-[10px] font-bold">看板</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('posts',this)">
+      <span class="material-symbols-outlined text-xl">dynamic_feed</span><span class="text-[10px] font-bold">帖子</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('goods',this)">
+      <span class="material-symbols-outlined text-xl">storefront</span><span class="text-[10px] font-bold">集市</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative" onclick="go('users',this)">
+      <span class="material-symbols-outlined text-xl">group</span><span class="text-[10px] font-bold">用户</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative" onclick="go('reports',this)">
+      <span class="material-symbols-outlined text-xl">flag</span><span class="text-[10px] font-bold">举报</span>
+      <span id="mbadge-reports" class="absolute -top-0.5 right-1 text-[9px] bg-error text-white w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+    </button>
+    <button class="mnav flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl" onclick="go('comments',this)">
+      <span class="material-symbols-outlined text-xl">chat</span><span class="text-[10px] font-bold">评论</span>
+    </button>
+  </nav>
+
+  <!-- ===== Main Content ===== -->
+  <main class="flex-1 md:ml-64 pt-14 md:pt-0 min-h-screen overflow-x-hidden">
+    <div class="w-full max-w-[1200px] mx-auto p-3 md:p-6 lg:p-8">
+
+      <!-- ====== 数据看板 ====== -->
+      <div id="panel-dashboard" class="panel active">
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 class="font-headline font-bold text-2xl text-on-surface tracking-tight">数据看板</h1>
+            <p class="text-on-surface-variant text-sm mt-1">实时统计云数据库 · 每日自动存档 · 可查看 7/14/30 日趋势</p>
+            <p id="dash-refresh-hint" class="text-[10px] text-slate-400 mt-1"></p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center gap-1.5 text-[10px] text-slate-500 cursor-pointer">
+              <input type="checkbox" id="dash-auto-refresh" class="rounded" onchange="toggleDashboardAutoRefresh()"/> 自动刷新(60s)
+            </label>
+            <select id="dash-trend-days" class="text-xs border border-border rounded-lg px-2 py-1.5 bg-white cursor-pointer" onchange="loadDashboard()">
+              <option value="7">趋势 7 天</option>
+              <option value="14">趋势 14 天</option>
+              <option value="30">趋势 30 天</option>
+            </select>
+            <span id="dash-updated-at" class="text-[10px] text-slate-400 font-mono"></span>
+            <button type="button" onclick="loadDashboard()" class="text-xs px-3 py-2 rounded-lg bg-primary text-white font-semibold hover:bg-blue-800 transition">刷新</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+          <div class="stat-card bg-white p-4 rounded-xl shadow-card border border-border/60 cursor-pointer" onclick="go('posts',document.querySelector('.nav-d[onclick*=posts]'))">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-primary text-lg">article</span><span class="text-[11px] text-on-surface-variant font-medium">帖子</span></div>
+            <span id="stat-posts" class="text-2xl font-bold text-primary font-mono">-</span>
+            <div class="text-[10px] text-emerald-600 mt-1">今日 +<span id="stat-today-posts" class="font-mono">0</span></div>
+          </div>
+          <div class="stat-card accent bg-white p-4 rounded-xl shadow-card border border-border/60 cursor-pointer" onclick="go('posts',document.querySelector('.nav-d[onclick*=posts]'));document.getElementById('post-status-filter').value='pending';loadPosts();">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-accent text-lg">videocam</span><span class="text-[11px] text-on-surface-variant font-medium">待审视频</span></div>
+            <span id="stat-pending-posts" class="text-2xl font-bold text-accent font-mono">-</span>
+          </div>
+          <div class="stat-card bg-white p-4 rounded-xl shadow-card border border-border/60 cursor-pointer" onclick="go('users',document.querySelector('.nav-d[onclick*=users]'))">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-secondary text-lg">group</span><span class="text-[11px] text-on-surface-variant font-medium">用户</span></div>
+            <span id="stat-users" class="text-2xl font-bold text-on-surface font-mono">-</span>
+            <div class="text-[10px] text-emerald-600 mt-1">今日 +<span id="stat-today-users" class="font-mono">0</span></div>
+          </div>
+          <div class="stat-card danger bg-white p-4 rounded-xl shadow-card border border-border/60 cursor-pointer" onclick="go('reports',document.querySelector('.nav-d[onclick*=reports]'))">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-error text-lg">flag</span><span class="text-[11px] text-on-surface-variant font-medium">待处理举报</span></div>
+            <span id="stat-reports" class="text-2xl font-bold text-error font-mono">-</span>
+          </div>
+          <div class="stat-card bg-white p-4 rounded-xl shadow-card border border-border/60 col-span-2 sm:col-span-1 cursor-pointer" onclick="go('comments',document.querySelector('.nav-d[onclick*=comments]'))">
+            <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-emerald-600 text-lg">chat_bubble</span><span class="text-[11px] text-on-surface-variant font-medium">评论</span></div>
+            <span id="stat-comments" class="text-2xl font-bold text-emerald-700 font-mono">-</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">今日登录</div><div id="stat-login-today" class="text-lg font-bold font-mono text-primary">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">7日活跃</div><div id="stat-login-7d" class="text-lg font-bold font-mono text-primary">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">30日活跃</div><div id="stat-login-30d" class="text-lg font-bold font-mono text-primary">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">点赞</div><div id="stat-likes" class="text-lg font-bold font-mono">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">关注</div><div id="stat-follows" class="text-lg font-bold font-mono">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">私信</div><div id="stat-messages" class="text-lg font-bold font-mono">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">集市商品</div><div id="stat-market" class="text-lg font-bold font-mono">-</div></div>
+          <div class="bg-white rounded-xl border border-border/50 p-3 text-center"><div class="text-[10px] text-slate-500">互推记录</div><div id="stat-referral" class="text-lg font-bold font-mono">-</div></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4 lg:col-span-2">
+            <h3 class="font-bold text-sm mb-1 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">show_chart</span>趋势折线图 <span class="live-dot" title="实时数据"></span></h3>
+            <p class="text-[10px] text-slate-400 mb-2">新用户 / 新帖子 / 当日登录（按自然日统计，刷新即更新）</p>
+            <div class="chart-legend">
+              <span style="--c:#10B981"><span style="background:#10B981" class="inline-block w-2.5 h-0.5 mr-1"></span>新用户</span>
+              <span style="--c:#F59E0B"><span style="background:#F59E0B" class="inline-block w-2.5 h-0.5 mr-1"></span>新帖子</span>
+              <span style="--c:#2563EB"><span style="background:#2563EB" class="inline-block w-2.5 h-0.5 mr-1"></span>当日登录</span>
+            </div>
+            <div id="chart-trends-line" class="line-chart-wrap"><p class="text-xs text-gray-400 py-8 text-center">加载中...</p></div>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-sm mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-secondary text-base">filter_alt</span>用户转化漏斗</h3>
+            <div id="funnel-container"></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4 mb-4">
+          <h3 class="font-bold text-sm mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-secondary text-base">groups</span>用户画像</h3>
+          <p id="persona-sample-hint" class="text-[10px] text-slate-400 mb-3"></p>
+          <div class="persona-grid">
+            <div><h4 class="text-[11px] font-semibold text-slate-600 mb-2">活跃分层</h4><div id="persona-activity"></div></div>
+            <div><h4 class="text-[11px] font-semibold text-slate-600 mb-2">资料完成度</h4><div id="persona-profile"></div></div>
+            <div><h4 class="text-[11px] font-semibold text-slate-600 mb-2">获客来源</h4><div id="persona-acquisition"></div></div>
+            <div><h4 class="text-[11px] font-semibold text-slate-600 mb-2">昵称情况</h4><div id="persona-nickname"></div></div>
+          </div>
+          <div class="mt-4"><h4 class="text-[11px] font-semibold text-slate-600 mb-2">学院 TOP</h4><div id="persona-college"></div></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4 mb-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-bold text-sm flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-base">history</span>历史日报</h3>
+            <select id="dash-history-days" class="text-xs border border-border rounded-lg px-2 py-1.5 bg-white cursor-pointer" onchange="loadAnalyticsHistory()">
+              <option value="14">近 14 天</option>
+              <option value="30" selected>近 30 天</option>
+              <option value="60">近 60 天</option>
+            </select>
+          </div>
+          <p id="history-note" class="text-[10px] text-slate-400 mb-2"></p>
+          <div id="history-table-wrap" class="overflow-x-auto"><p class="text-xs text-gray-400 py-4 text-center">加载中...</p></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3">校区分布 TOP</h3>
+            <div id="campus-distribution"></div>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3">帖子分类</h3>
+            <div id="post-categories-chart"></div>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3">集市分类</h3>
+            <div id="market-categories-chart"></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4 mb-4">
+          <h3 class="font-bold text-xs mb-2 flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-base">lightbulb</span>数据洞察</h3>
+          <div id="dash-insights"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-base">schedule</span>最近帖子</h3>
+            <div id="recent-posts" class="space-y-2"><p class="text-xs text-gray-400 text-center py-4">加载中...</p></div>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-50 p-4">
+            <h3 class="font-bold text-xs mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-error text-base">warning</span>最新举报</h3>
+            <div id="recent-reports" class="space-y-2"><p class="text-xs text-gray-400 text-center py-4">加载中...</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== 帖子管理 ====== -->
+      <div id="panel-posts" class="panel">
+        <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+          <h1 class="font-headline font-extrabold text-xl">帖子管理</h1>
+          <div class="flex gap-2">
+            <button onclick="toggleBatchMode('post')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 font-bold cursor-pointer">批量操作</button>
+            <button onclick="exportPostsCSV()" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold cursor-pointer">导出CSV</button>
+          </div>
+        </div>
+        <p class="text-on-surface-variant text-xs mb-4">审核、下架、置顶帖子</p>
+        <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
+          <select id="post-status-filter" onchange="loadPosts()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0"><option value="">全部状态</option><option value="active">正常</option><option value="pending">待审核(视频)</option><option value="hidden">已下架</option><option value="deleted">已删除</option></select>
+          <select id="post-category-filter" onchange="loadPosts()" class="filter-select text-xs border border-border rounded-lg px-2.5 py-2 bg-white flex-shrink-0 min-w-[120px] cursor-pointer"><option value="">全部分类</option><option>树洞</option><option>求助</option><option>找搭子</option><option>校园生活</option><option>学术交流</option><option>失物招领</option><option>社团活动</option><option>校园活动</option><option>其他</option></select>
+        </div>
+        <div class="relative mb-3">
+          <input id="post-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索帖子..." oninput="debounceSearch('post')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="posts-container" class="space-y-3"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+        <div id="posts-pagination" class="flex justify-center gap-2 mt-4 hidden">
+          <button onclick="postPage=Math.max(1,postPage-1);loadPosts()" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold cursor-pointer">上一页</button>
+          <span id="posts-page-info" class="text-xs text-gray-500 flex items-center px-2">第 1 页</span>
+          <button onclick="postPage++;loadPosts()" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold cursor-pointer">下一页</button>
+        </div>
+      </div>
+
+      <!-- ====== 集市管理 ====== -->
+      <div id="panel-goods" class="panel">
+        <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+          <h1 class="font-headline font-extrabold text-xl">二手集市</h1>
+          <div class="flex gap-2">
+            <button onclick="toggleBatchMode('goods')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 font-bold cursor-pointer">批量操作</button>
+            <button onclick="exportGoodsCSV()" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold cursor-pointer">导出CSV</button>
+          </div>
+        </div>
+        <p class="text-on-surface-variant text-xs mb-4">审核、下架交易商品</p>
+        <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
+          <select id="goods-status-filter" onchange="loadGoods()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0"><option value="">全部状态</option><option value="active">正常</option><option value="hidden">已下架</option><option value="deleted">已删除</option></select>
+          <select id="goods-category-filter" onchange="loadGoods()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white flex-shrink-0"><option value="">全部分类</option><option>书籍</option><option>手机数码</option><option>生活用品</option><option>其他</option></select>
+        </div>
+        <div class="relative mb-3">
+          <input id="goods-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索商品名称..." oninput="debounceSearch('goods')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="goods-container" class="space-y-3"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+        <div id="goods-pagination" class="flex justify-center gap-2 mt-4 hidden">
+          <button onclick="goodsPage=Math.max(1,goodsPage-1);loadGoods()" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold cursor-pointer">上一页</button>
+          <span id="goods-page-info" class="text-xs text-gray-500 flex items-center px-2">第 1 页</span>
+          <button onclick="goodsPage++;loadGoods()" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold cursor-pointer">下一页</button>
+        </div>
+      </div>
+
+      <!-- ====== 用户管理 ====== -->
+      <div id="panel-users" class="panel panel-wrap">
+        <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+          <h1 class="font-headline font-extrabold text-xl">用户管理</h1>
+          <button onclick="exportUsersCSV()" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold cursor-pointer">导出CSV</button>
+        </div>
+        <p class="text-on-surface-variant text-xs mb-4">查看信息 · 封禁/禁言 · 设管理员</p>
+        <div class="flex gap-2 mb-3">
+          <select id="user-status-filter" onchange="loadUsers()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white"><option value="">全部</option><option value="active">正常</option><option value="banned">已封禁</option></select>
+          <select id="user-role-filter" onchange="loadUsers()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white"><option value="">全部角色</option><option value="admin">管理员</option><option value="user">普通用户</option></select>
+        </div>
+        <div class="relative mb-3">
+          <input id="user-search" class="filter-input w-full max-w-full h-11 pl-10 pr-3 bg-white border border-border rounded-xl text-sm box-border" placeholder="搜索昵称、学院、校区、openid；输入「管理员」筛管理员" oninput="debounceSearch('user')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="users-container" class="space-y-2"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+        <div id="users-pagination" class="flex justify-center gap-2 mt-4 hidden">
+          <button onclick="userPage=Math.max(1,userPage-1);loadUsers()" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold cursor-pointer">上一页</button>
+          <span id="users-page-info" class="text-xs text-gray-500 flex items-center px-2">第 1 页</span>
+          <button onclick="userPage++;loadUsers()" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold cursor-pointer">下一页</button>
+        </div>
+      </div>
+
+      <!-- ====== 举报处理 ====== -->
+      <div id="panel-reports" class="panel">
+        <div class="flex items-center justify-between mb-4">
+          <div><h1 class="font-headline font-extrabold text-xl mb-1">举报处理</h1><p class="text-on-surface-variant text-xs">审核举报，判定违规</p></div>
+          <select id="report-status-filter" onchange="loadReports()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white"><option value="pending">待处理</option><option value="">全部</option><option value="resolved">已处理</option><option value="dismissed">已驳回</option></select>
+        </div>
+        <div id="reports-container" class="space-y-3"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 评论管理 ====== -->
+      <div id="panel-comments" class="panel">
+        <h1 class="font-headline font-extrabold text-xl mb-1">评论管理</h1>
+        <p class="text-on-surface-variant text-xs mb-4">帖子评论与商品评论统一管理</p>
+        <div class="flex gap-2 mb-3">
+          <select id="comment-type-filter" onchange="loadComments()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white">
+            <option value="all">全部类型</option>
+            <option value="post">帖子评论</option>
+            <option value="market">商品评论</option>
+          </select>
+          <select id="comment-status-filter" onchange="loadComments()" class="text-xs border border-gray-200 rounded-xl px-2.5 py-2 bg-white">
+            <option value="active">正常</option>
+            <option value="hidden">已隐藏</option>
+            <option value="deleted">已删除</option>
+            <option value="">全部状态</option>
+          </select>
+        </div>
+        <div class="relative mb-3">
+          <input id="comment-search" class="w-full h-11 pl-10 pr-3 bg-white border border-gray-200 rounded-xl text-sm" placeholder="搜索评论..." oninput="debounceSearch('comment')"/>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
+        </div>
+        <div id="comments-container" class="space-y-2"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 公告管理 ====== -->
+      <div id="panel-announcements" class="panel panel-wrap">
+        <h1 class="font-headline font-bold text-2xl mb-1">公告管理</h1>
+        <p class="text-on-surface-variant text-sm mb-4">发布校园公告 · 支持图片与按校区投放</p>
+        <div class="bg-white rounded-xl border border-border/60 p-4 md:p-5 mb-4 shadow-card form-card">
+          <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-primary">add_circle</span>新建公告</h3>
+          <div class="space-y-3">
+            <input id="ann-title" class="filter-input w-full max-w-full h-10 px-3 border border-border rounded-lg text-sm box-border" placeholder="公告标题"/>
+            <textarea id="ann-content" class="filter-input w-full max-w-full min-h-[120px] p-3 border border-border rounded-lg text-sm box-border resize-y" placeholder="公告正文"></textarea>
+            <div>
+              <p class="text-xs font-semibold text-slate-600 mb-2">公告图片（最多 10 张）</p>
+              <div id="ann-upload-zone" class="upload-zone" onclick="pickAnnImages()">
+                <span class="material-symbols-outlined text-3xl text-slate-400">add_photo_alternate</span>
+                <p class="text-xs text-slate-500 mt-2">点击上传图片</p>
+              </div>
+              <div id="ann-images-preview" class="thumb-grid mt-2"></div>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+              <select id="ann-priority" class="filter-select text-xs border border-border rounded-lg px-2 py-2 bg-white cursor-pointer"><option value="normal">普通</option><option value="important">重要</option><option value="urgent">紧急</option></select>
+              <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" id="ann-pin" class="rounded"/>置顶</label>
+              <label class="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" id="ann-notify" checked class="rounded"/>发布时推送</label>
+            </div>
+            <details class="campus-picker-box" id="ann-campus-details">
+              <summary id="ann-campus-summary">选择投放校区</summary>
+              <div id="ann-campus-chips" class="campus-chips-scroll flex flex-wrap gap-1.5"></div>
+            </details>
+            <button type="button" onclick="submitAnnouncement()" class="w-full max-w-full py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition cursor-pointer">创建并发布</button>
+          </div>
+        </div>
+        <div id="announcements-container" class="space-y-3 w-full"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+      <!-- ====== 活动专区 ====== -->
+      <div id="panel-activity" class="panel panel-wrap">
+        <h1 class="font-headline font-bold text-2xl mb-1">活动专区</h1>
+        <p class="text-on-surface-variant text-sm mb-4">首页顶部轮播（16:9）· 本期活动帖流（结束后自动转普通帖并清空专区）</p>
+        <div class="bg-white rounded-xl border border-border/60 p-4 md:p-5 shadow-card space-y-4 form-card">
+          <p id="act-status-line" class="text-xs text-emerald-700 font-semibold hidden"></p>
+          <label class="flex items-center gap-2 cursor-pointer text-sm"><input type="checkbox" id="act-enabled" class="rounded"/>启用活动专区</label>
+          <label class="text-xs font-bold text-slate-600 block">自动结束时间（可选）</label>
+          <input type="datetime-local" id="act-end-at" class="filter-input w-full text-sm px-2.5 py-2 border rounded-lg box-border"/>
+          <details class="campus-picker-box" id="act-campus-details" open>
+            <summary id="act-campus-summary">选择展示校区</summary>
+            <div id="act-campus-chips" class="campus-chips-scroll flex flex-wrap gap-1.5"></div>
+          </details>
+          <div id="act-slides-editor" class="space-y-4"></div>
+          <button type="button" onclick="addActivitySlide()" class="text-xs font-bold text-primary cursor-pointer flex items-center gap-1"><span class="material-symbols-outlined text-base">add</span>添加轮播项</button>
+          <button type="button" onclick="saveActivityZone()" class="w-full max-w-full py-2.5 bg-primary text-white rounded-lg text-sm font-semibold cursor-pointer">保存配置</button>
+          <button type="button" id="act-end-btn" onclick="endActivityZone()" class="w-full max-w-full py-2.5 mt-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-semibold cursor-pointer hidden">结束本期活动</button>
+        </div>
+      </div>
+
+      <!-- ====== 操作日志 ====== -->
+      <div id="panel-auditlog" class="panel panel-wrap">
+        <div class="flex items-center justify-between mb-4">
+          <div><h1 class="font-headline font-bold text-2xl mb-1">操作日志</h1><p class="text-on-surface-variant text-sm">管理员操作记录（本地存储）</p></div>
+          <button onclick="clearAuditLogs()" class="text-xs px-3 py-2 rounded-lg bg-gray-100 text-gray-600 font-semibold cursor-pointer">清空日志</button>
+        </div>
+        <div id="auditlog-container" class="space-y-2"><p class="text-center text-gray-400 py-8 text-sm">暂无日志</p></div>
+      </div>
+
+      <!-- ====== 系统设置 ====== -->
+      <div id="panel-settings" class="panel panel-wrap">
+        <h1 class="font-headline font-bold text-2xl mb-1">系统设置</h1>
+        <p class="text-on-surface-variant text-sm mb-4">后台偏好与通知配置</p>
+        <div class="space-y-4 max-w-lg">
+          <div class="bg-white rounded-xl border border-border/60 p-4 shadow-card">
+            <h3 class="font-bold text-sm mb-3">外观</h3>
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-sm">夜间模式</span>
+              <button onclick="toggleDarkMode()" class="px-4 py-2 bg-primary text-white text-xs rounded-lg font-semibold cursor-pointer">切换</button>
+            </label>
+          </div>
+          <div class="bg-white rounded-xl border border-border/60 p-4 shadow-card">
+            <h3 class="font-bold text-sm mb-3">通知提醒</h3>
+            <p class="text-xs text-gray-500 mb-2">当有新举报或待审核帖子时，浏览器弹出通知提醒（需授权）</p>
+            <button onclick="requestNotifyPermission()" class="px-4 py-2 bg-primary text-white text-xs rounded-lg font-semibold cursor-pointer">开启浏览器通知</button>
+            <p id="notify-status" class="text-[10px] text-gray-400 mt-2"></p>
+          </div>
+          <div class="bg-white rounded-xl border border-border/60 p-4 shadow-card">
+            <h3 class="font-bold text-sm mb-3">数据自动刷新</h3>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="settings-auto-refresh" class="rounded" onchange="toggleDashboardAutoRefresh()"/> 数据看板每 60 秒自动刷新
+            </label>
+          </div>
+          <div class="bg-white rounded-xl border border-border/60 p-4 shadow-card">
+            <h3 class="font-bold text-sm mb-3">关于</h3>
+            <p class="text-xs text-gray-500">校园便利盒 Admin v7.0</p>
+            <p class="text-xs text-gray-400 mt-1">云环境: xyblh-5gb26qrnf9d30feb</p>
+            <p class="text-xs text-gray-400">密钥状态: <span id="secret-status" class="font-mono"></span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== 员工推广 ====== -->
+      <div id="panel-referral" class="panel">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div><h1 class="font-headline font-bold text-2xl mb-1">员工推广</h1><p class="text-on-surface-variant text-sm">邀请码统计与太阳码</p></div>
+          <button type="button" onclick="openReferralForm(true)" class="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold cursor-pointer">添加员工</button>
+        </div>
+        <div id="referral-container" class="space-y-2"><p class="text-center text-gray-400 py-8 text-sm">加载中...</p></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ===== Action Sheet (Mobile-friendly modal) ===== -->
+<div id="action-sheet-overlay" class="fixed inset-0 bg-black/40 z-[200] hidden" onclick="closeSheet()"></div>
+<div id="action-sheet" class="action-sheet hidden-sheet fixed bottom-0 left-0 right-0 z-[210] bg-white rounded-t-3xl max-h-[90vh] overflow-y-auto safe-area-inset-bottom" style="padding-bottom: env(safe-area-inset-bottom, 16px);">
+  <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-2"></div>
+  <div id="action-sheet-content" class="px-5 pb-5"></div>
+</div>
+
+<input type="file" id="ann-image-picker" accept="image/*" multiple class="hidden"/>
+<input type="file" id="act-image-picker" accept="image/*" class="hidden"/>
+
+<script>
+// ============ 配置（与小程序 campus_treehole/app.js 中 CLOUD_ENV_ID 保持一致）============
+const CONFIG = {
+  CLOUD_ENV_ID: 'xyblh-5gb26qrnf9d30feb',
+  /** 与云函数环境变量一致：adminPanel、dbOperations 均需 ADMIN_WEB_SECRET。可在控制台配置，或在 campus_treehole 目录执行 npm run cloud:push-fn-env（读取 cloudbaserc.json） */
+  ADMIN_WEB_SECRET: ''
+};
+
+function hasAdminSecret() {
+  return typeof CONFIG.ADMIN_WEB_SECRET === 'string' && CONFIG.ADMIN_WEB_SECRET.length >= 8;
+}
+
+// ============ 初始化 ============
+const cloudApp = cloudbase.init({ env: CONFIG.CLOUD_ENV_ID });
+const db = cloudApp.database(); const _ = db.command;
+const auth = cloudApp.auth({ persistence: 'local' });
+
+let postsCache=[], goodsCache=[], usersCache=[], reportsCache=[], commentsCache=[];
+let referralEmployeesCache = [];
+let referralQrGenerating = '';
+let searchTimer=null;
+const CAMPUSES = [
+  { id: 'guit-hangtian', name: '桂林航天工业学院' },
+  { id: 'gxnu-yanshan', name: '广西师范大学雁山校区' },
+  { id: 'gxnu-yucai', name: '广西师范大学育才校区' },
+  { id: 'guet-jjl', name: '桂林电子科技大学金鸡岭校区' },
+  { id: 'guet-huajiang', name: '桂林电子科技大学花江校区' },
+  { id: 'glut-yanshan', name: '桂林理工大学雁山校区' },
+  { id: 'glut-pingfeng', name: '桂林理工大学屏风校区' },
+  { id: 'gxmu', name: '广西医科大学' },
+  { id: 'gltu', name: '桂林旅游学院' },
+  { id: 'guilin-college', name: '桂林学院' },
+  { id: 'glnc', name: '桂林师范学院' },
+  { id: 'gist', name: '桂林信息科技学院' },
+  { id: 'nnlgxy', name: '南宁理工学院' }
+];
+const CAMPUS_MAP = Object.fromEntries(CAMPUSES.map(c => [c.id, c.name]));
+const titles = { dashboard:'数据看板', posts:'帖子管理', goods:'集市管理', users:'用户管理', reports:'举报处理', comments:'评论管理', announcements:'公告管理', activity:'活动专区', referral:'员工推广', auditlog:'操作日志', settings:'系统设置' };
+let annCampusSel = new Set();
+let annImages = [];
+let actCampusSel = new Set();
+let actSlides = [];
+let actUploadIndex = -1;
+
+function campusName(id) { return CAMPUS_MAP[id] || id || '未设置校区'; }
+function getGlobalCampusId() {
+  const el = document.getElementById('global-campus-filter');
+  return el && el.value ? el.value : '';
+}
+function initCampusFilters() {
+  const g = document.getElementById('global-campus-filter');
+  if (g) CAMPUSES.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; g.appendChild(o); });
+  renderCampusChips('ann-campus-chips', annCampusSel, toggleAnnCampus);
+  renderCampusChips('act-campus-chips', actCampusSel, toggleActCampus);
+}
+function updateCampusSummary(summaryId, selectedSet) {
+  const el = document.getElementById(summaryId);
+  if (!el) return;
+  const n = selectedSet.has('all') ? '全部校区' : selectedSet.size;
+  el.textContent = selectedSet.has('all') ? '选择投放校区（全部校区）' : `选择投放校区（已选 ${n} 个）`;
+}
+function renderCampusChips(containerId, selectedSet, toggleFn) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  box.innerHTML = CAMPUSES.map(c => {
+    const on = selectedSet.has(c.id);
+    return `<button type="button" onclick="${toggleFn}('${c.id}')" class="campus-chip cursor-pointer ${on ? 'ring-2 ring-primary bg-blue-100' : 'opacity-80'}">${esc(c.name)}</button>`;
+  }).join('') + `<button type="button" onclick="${toggleFn}('all')" class="campus-chip cursor-pointer ${selectedSet.has('all') ? 'ring-2 ring-accent bg-amber-50' : ''}">全部校区</button>`;
+  if (containerId === 'ann-campus-chips') updateCampusSummary('ann-campus-summary', selectedSet);
+  if (containerId === 'act-campus-chips') updateCampusSummary('act-campus-summary', selectedSet);
+}
+function toggleAnnCampus(id) { if (id === 'all') { annCampusSel.clear(); annCampusSel.add('all'); } else { annCampusSel.delete('all'); annCampusSel.has(id) ? annCampusSel.delete(id) : annCampusSel.add(id); } renderCampusChips('ann-campus-chips', annCampusSel, 'toggleAnnCampus'); }
+function toggleActCampus(id) { if (id === 'all') { actCampusSel.clear(); actCampusSel.add('all'); } else { actCampusSel.delete('all'); actCampusSel.has(id) ? actCampusSel.delete(id) : actCampusSel.add(id); } renderCampusChips('act-campus-chips', actCampusSel, 'toggleActCampus'); }
+
+/** 上传图片到云存储，返回 cloud:// fileID */
+async function uploadAdminImage(file, folder) {
+  if (!file) throw new Error('未选择文件');
+  if (file.size > 10 * 1024 * 1024) throw new Error('图片最大 10MB');
+  const rawExt = (file.name && file.name.split('.').pop()) || 'jpg';
+  const ext = String(rawExt).replace(/[^a-z0-9]/gi, '') || 'jpg';
+  const cloudPath = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  let res;
+  try {
+    if (typeof cloudApp.uploadFile === 'function') {
+      res = await cloudApp.uploadFile({ cloudPath, filePath: file });
+    } else {
+      const st = typeof cloudApp.storage === 'function' ? cloudApp.storage() : null;
+      if (!st || typeof st.uploadFile !== 'function') throw new Error('当前环境不支持上传，请在云开发控制台开启存储权限');
+      res = await st.uploadFile({ cloudPath, filePath: file });
+    }
+  } catch (e) {
+    const msg = (e && e.message) ? String(e.message) : String(e);
+    if (/EXCEED_AUTHORITY|PERMISSION|permission/i.test(msg)) {
+      throw new Error('云存储无上传权限：请在控制台为匿名用户开放存储写入，或将本页域名加入安全域名');
+    }
+    throw e;
+  }
+  const fileID = res && (res.fileID || (res.data && res.data.fileID));
+  if (!fileID || !String(fileID).startsWith('cloud://')) throw new Error('上传失败，未返回 fileID');
+  return fileID;
+}
+
+function pickAnnImages() {
+  const inp = document.getElementById('ann-image-picker');
+  if (!inp) return;
+  inp.onchange = async () => {
+    const files = Array.from(inp.files || []);
+    inp.value = '';
+    if (!files.length) return;
+    const remain = 10 - annImages.length;
+    if (remain <= 0) { toast('最多 10 张图片', 'error'); return; }
+    const zone = document.getElementById('ann-upload-zone');
+    if (zone) zone.classList.add('uploading');
+    try {
+      for (const file of files.slice(0, remain)) {
+        const fileID = await uploadAdminImage(file, 'announcements');
+        const map = await resolveCloudFileUrlsBatch([fileID]);
+        annImages.push({ fileID, preview: map[fileID] || URL.createObjectURL(file) });
+      }
+      renderAnnImagesPreview();
+      toast('图片已上传');
+    } catch (e) { toast(formatPanelError(e), 'error'); }
+    finally { if (zone) zone.classList.remove('uploading'); }
+  };
+  inp.click();
+}
+
+function renderAnnImagesPreview() {
+  const box = document.getElementById('ann-images-preview');
+  if (!box) return;
+  if (!annImages.length) { box.innerHTML = ''; return; }
+  box.innerHTML = annImages.map((img, i) => `
+    <div class="thumb-item">
+      <img src="${attrUrl(img.preview || img.fileID)}" alt=""/>
+      <button type="button" class="thumb-remove" onclick="removeAnnImage(${i})" title="移除">×</button>
+    </div>`).join('');
+}
+
+function removeAnnImage(i) {
+  annImages.splice(i, 1);
+  renderAnnImagesPreview();
+}
+
+function pickActSlideImage(index) {
+  actUploadIndex = index;
+  const inp = document.getElementById('act-image-picker');
+  if (!inp) return;
+  inp.onchange = async () => {
+    const file = inp.files && inp.files[0];
+    inp.value = '';
+    if (!file || actUploadIndex < 0) return;
+    const i = actUploadIndex;
+    actSlides[i].uploading = true;
+    actSlides[i].previewUrl = URL.createObjectURL(file);
+    renderActivitySlidesEditor();
+    try {
+      const fileID = await uploadAdminImage(file, 'activity_zone');
+      const map = await resolveCloudFileUrlsBatch([fileID]);
+      actSlides[i].image = fileID;
+      actSlides[i].previewUrl = map[fileID] || actSlides[i].previewUrl;
+      actSlides[i].uploading = false;
+      toast('轮播图已上传');
+    } catch (e) {
+      actSlides[i].uploading = false;
+      actSlides[i].image = '';
+      actSlides[i].previewUrl = '';
+      toast(formatPanelError(e), 'error');
+    }
+    renderActivitySlidesEditor();
+  };
+  inp.click();
+}
+function onGlobalCampusChange() { postsCache=[]; goodsCache=[]; usersCache=[]; loadAllData(); }
+function openMobileMore() {
+  openSheet(`<h3 class="font-bold mb-3">更多功能</h3><div class="grid grid-cols-2 gap-2">
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();go('announcements')">公告</button>
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();go('activity')">活动专区</button>
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();go('referral')">员工推广</button>
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();go('goods')">集市</button>
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();go('auditlog')">操作日志</button>
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();go('settings')">设置</button>
+    <button type="button" class="py-3 rounded-xl bg-slate-100 text-sm font-bold cursor-pointer" onclick="closeSheet();toggleDarkMode()">切换主题</button>
+  </div>`);
+}
+function campusFilterPayload() { const c = getGlobalCampusId(); return c ? { campusId: c } : {}; }
+
+/** CloudBase 平台层错误（非业务 code:0/-1），若不抛错会被 assertCloudOk 当成普通失败并显示原始 JSON */
+function isPlatformCloudFailurePayload(payload) {
+  if (!payload || typeof payload !== 'object') return false
+  const c = payload.code
+  return c === 'OPERATION_FAIL' || c === 'PERMISSION_DENIED' || c === 'EXCEED_AUTHORITY'
+}
+
+/** 云函数运行时崩溃（如缺依赖），需走 dbOperations 中继 */
+function isCloudFunctionCrashPayload(payload) {
+  if (!payload || typeof payload !== 'object') return false
+  if (payload.errorCode || payload.errorMessage) return true
+  const msg = String(payload.msg || payload.message || '')
+  return /Cannot find module|FUNCTIONS_EXECUTE_FAIL|函数执行失败|errorCode/i.test(msg)
+}
+
+async function callFn(name, data) {
+  let res
+  try {
+    res = await cloudApp.callFunction({ name, data: data || {} })
+  } catch (err) {
+    const msg = String((err && err.message) || err || '')
+    const e = new Error(msg)
+    if (/OPERATION_FAIL|PERMISSION_DENIED|EXCEED_AUTHORITY|Permission denied|exceed.*authority/i.test(msg)) throw e
+    throw err
+  }
+  const payload = res && (res.result !== undefined ? res.result : res)
+  if (isPlatformCloudFailurePayload(payload)) {
+    const err = new Error(payload.msg || payload.message || '云函数调用失败')
+    throw err
+  }
+  if (isCloudFunctionCrashPayload(payload)) {
+    throw new Error(payload.errorMessage || payload.msg || '云函数执行异常')
+  }
+  return payload
+}
+
+function isCloudPermissionDenied(errOrVal) {
+  const parts = []
+  if (errOrVal != null) {
+    if (typeof errOrVal === 'string') parts.push(errOrVal)
+    else {
+      try { parts.push(JSON.stringify(errOrVal)) } catch (e) { parts.push(String(errOrVal)) }
+      if (errOrVal.message) parts.push(String(errOrVal.message))
+      if (errOrVal.msg) parts.push(String(errOrVal.msg))
+    }
+  }
+  const s = parts.join(' ')
+  if (/PERMISSION_DENIED|EXCEED_AUTHORITY|Permission denied|exceed.*authority/i.test(s)) return true
+  if (/OPERATION_FAIL/i.test(s) && /PERMISSION|拒绝访问|无权|AUTHORITY/i.test(s)) return true
+  return false
+}
+
+async function adminCallViaDbOpsRelay(action, data) {
+  return callFn('dbOperations', {
+    action: 'callAdminPanel',
+    data: {
+      webSecret: CONFIG.ADMIN_WEB_SECRET,
+      adminAction: action,
+      adminData: data || {}
+    }
+  })
+}
+
+async function adminCall(action, data) {
+  const payload = { action, data: data || {} };
+  if (hasAdminSecret()) payload.webSecret = CONFIG.ADMIN_WEB_SECRET;
+  // 优先走 dbOperations 中继（与 webAdminHandlers 同源，避免 adminPanel 缺依赖崩溃）
+  if (hasAdminSecret()) {
+    try {
+      return await adminCallViaDbOpsRelay(action, data);
+    } catch (e) {
+      if (!isCloudPermissionDenied(e) && !/Cannot find module|云函数执行异常|FUNCTIONS_EXECUTE_FAIL/i.test(String(e.message || e))) {
+        throw e;
+      }
+    }
+    const raw = await callFn('adminPanel', payload);
+    if (isCloudFunctionCrashPayload(raw)) {
+      throw new Error(raw.errorMessage || 'adminPanel 不可用');
+    }
+    return raw;
+  }
+  return await callFn('adminPanel', payload);
+}
+
+function assertCloudOk(raw, fallbackMsg) {
+  if (!raw || Number(raw.code) !== 0) {
+    throw new Error((raw && raw.msg) || fallbackMsg || '请求失败');
+  }
+  return raw;
+}
+
+/** 有密钥时先走云函数，遇 PERMISSION_DENIED 则走 dbLoader（依赖库安全规则允许匿名读） */
+async function adminReadWithDbFallback(adminAction, adminData, dbLoader) {
+  if (!hasAdminSecret()) {
+    const data = await dbLoader();
+    return { code: 0, data };
+  }
+  try {
+    return assertCloudOk(await adminCall(adminAction, adminData), '请求失败');
+  } catch (e) {
+    if (!isCloudPermissionDenied(e)) throw e;
+    const data = await dbLoader();
+    return { code: 0, data };
+  }
+}
+
+async function adminWriteWithDbFallback(runAdmin, runDb) {
+  if (!hasAdminSecret()) {
+    await runDb();
+    return;
+  }
+  try {
+    await runAdmin();
+  } catch (e) {
+    if (isCloudPermissionDenied(e)) {
+      await runDb();
+      return;
+    }
+    throw e;
+  }
+}
+
+function formatPanelError(e) {
+  let msg = (e && e.message) ? String(e.message) : '加载失败';
+  try {
+    const j = JSON.parse(msg);
+    if (j && j.msg) msg = String(j.msg);
+  } catch (x) { /* ignore */ }
+  if (isCloudPermissionDenied(e) || /PERMISSION_DENIED|EXCEED_AUTHORITY|Permission denied|OPERATION_FAIL/i.test(msg)) {
+    return hasAdminSecret()
+      ? '云函数权限不足（EXCEED_AUTHORITY）：请在 CloudBase 控制台将 adminPanel、dbOperations 的调用规则改为允许匿名用户（auth != null），并确认已开启匿名登录。管理操作仍由 ADMIN_WEB_SECRET 校验。'
+      : '无权限：请在 CONFIG.ADMIN_WEB_SECRET 填写与云端一致的密钥。';
+  }
+  if (/INVALID_WX_ACCESS_TOKEN|WX_APP_SECRET|wxacode|太阳码|access_token/i.test(msg)) {
+    return '生成太阳码失败：请在云开发控制台为云函数 adminPanel、dbOperations 配置环境变量 WX_APPID（小程序 AppID）与 WX_APP_SECRET（开发设置中的 AppSecret），保存后重新上传部署云函数，再重试。';
+  }
+  return msg;
+}
+
+/** Web SDK 换取临时链（需已匿名登录 + 控制台安全域名）；失败再走云函数 */
+function getWebSdkGetTempFileURL() {
+  if (typeof cloudApp.getTempFileURL === 'function') return cloudApp.getTempFileURL.bind(cloudApp);
+  try {
+    const ext = cloudApp.extend && cloudApp.extend.storage;
+    if (ext && typeof ext.getTempFileURL === 'function') return ext.getTempFileURL.bind(ext);
+    const s = typeof cloudApp.storage === 'function' ? cloudApp.storage() : null;
+    if (s && typeof s.getTempFileURL === 'function') return s.getTempFileURL.bind(s);
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+function mergeTempFileListToMap(files, urlMap) {
+  if (!Array.isArray(files)) return;
+  files.forEach((file) => {
+    if (file.code != null && file.code !== 'SUCCESS' && file.code !== 0 && file.code !== 'success') return;
+    const fid = file.fileID || file.fileId || file.FileID;
+    const u = file.tempFileURL || file.TempFileURL || file.download_url || file.download_URL;
+    if (fid && u) urlMap[fid] = u;
+  });
+}
+
+async function resolveCloudFileUrlsBatch(batch) {
+  const urlMap = {};
+  const webGet = getWebSdkGetTempFileURL();
+  if (webGet) {
+    try {
+      const out = await webGet({
+        fileList: batch.map((fileID) => ({ fileID, maxAge: 86400 }))
+      });
+      mergeTempFileListToMap(out && out.fileList, urlMap);
+    } catch (e) {
+      console.warn('[admin] Web SDK getTempFileURL', e);
+    }
+  }
+  const missing = batch.filter((id) => !urlMap[id]);
+  if (!missing.length) return urlMap;
+  try {
+    const res = await callFn('dbOperations', { action: 'getTempFileUrls', data: { fileList: missing } });
+    const payload = res && (res.result !== undefined ? res.result : res);
+    const ok = payload && Number(payload.code) === 0;
+    const files = ok ? (payload.data || payload.fileList || []) : [];
+    mergeTempFileListToMap(files, urlMap);
+  } catch (err) {
+    console.warn('[admin] getTempFileUrls 云函数', err);
+  }
+  return urlMap;
+}
+
+// 云端媒体：cloud:// 在浏览器中需换临时 HTTPS（优先 Web SDK，云函数兜底）
+async function translateMediaLinks(datalist) {
+  if(!datalist || datalist.length === 0) return;
+  const allMedia = new Set();
+  datalist.forEach(item => {
+    const add = (u) => { if (u && String(u).startsWith('cloud://')) allMedia.add(String(u)); };
+    add(item.avatar);
+    add(item.avatarUrl);
+    add(item.image);
+    if(item.images && Array.isArray(item.images)) item.images.forEach(add);
+    if(item.thumbImages && Array.isArray(item.thumbImages)) item.thumbImages.forEach(add);
+    if(item.videos && Array.isArray(item.videos)) item.videos.forEach(add);
+  });
+
+  const fileList = Array.from(allMedia);
+  if (fileList.length === 0) return;
+
+  const urlMap = {};
+  for (let i = 0; i < fileList.length; i += 50) {
+    const batch = fileList.slice(i, i + 50);
+    const part = await resolveCloudFileUrlsBatch(batch);
+    Object.assign(urlMap, part);
+  }
+
+  const mapOne = (u) => (u && urlMap[u]) ? urlMap[u] : u;
+  datalist.forEach((item) => {
+    if (item.avatar) item.avatar = mapOne(item.avatar);
+    if (item.avatarUrl) item.avatarUrl = mapOne(item.avatarUrl);
+    if (item.image) item.image = mapOne(item.image);
+    if (item.images && Array.isArray(item.images)) item.images = item.images.map(mapOne);
+    if (item.thumbImages && Array.isArray(item.thumbImages)) item.thumbImages = item.thumbImages.map(mapOne);
+    if (item.videos && Array.isArray(item.videos)) item.videos = item.videos.map(mapOne);
+  });
+}
+
+function openMediaUrl(encoded) {
+  try {
+    const u = decodeURIComponent(encoded);
+    if (u && /^https?:\/\//i.test(u)) window.open(u, '_blank', 'noopener');
+  } catch (e) { console.error(e); }
+}
+
+function copyPostId(id) {
+  const s = String(id);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(s).then(() => toast('已复制 ID', 'success')).catch(() => toast('复制失败', 'error'));
+  } else {
+    toast(s, 'success');
+  }
+}
+
+// Toast
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl text-sm font-bold shadow-lg pointer-events-none transition-all ${type==='error'?'bg-red-600 text-white':'bg-on-surface text-white'} opacity-100 translate-y-0`;
+  setTimeout(()=>{ el.classList.add('opacity-0','translate-y-[-20px]'); }, 2200);
+}
+
+// ============ 确认弹窗 ============
+function confirmAction(title, desc, onConfirm) {
+  openSheet(`
+    <div class="text-center mb-4">
+      <span class="material-symbols-outlined text-amber-500 text-4xl mb-2">warning</span>
+      <div class="font-bold text-base">${esc(title)}</div>
+      <div class="text-xs text-gray-500 mt-1">${esc(desc)}</div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="closeSheet()" class="flex-1 card-action rounded-xl bg-gray-100 text-gray-600 font-bold text-sm">取消</button>
+      <button id="_confirm-btn" class="flex-1 card-action rounded-xl bg-red-500 text-white font-bold text-sm">确认</button>
+    </div>`);
+  document.getElementById('_confirm-btn').onclick = () => { closeSheet(); onConfirm(); };
+}
+
+// ============ 操作日志 ============
+let auditLogs = [];
+function logAuditAction(action, target, detail) {
+  auditLogs.unshift({ time: new Date().toISOString(), action, target, detail: detail || '' });
+  if (auditLogs.length > 200) auditLogs.length = 200;
+  try { localStorage.setItem('admin_audit_logs', JSON.stringify(auditLogs)); } catch(e){}
+}
+function loadAuditLogs() { try { auditLogs = JSON.parse(localStorage.getItem('admin_audit_logs') || '[]'); } catch(e){ auditLogs = []; } }
+
+// ============ CSV 导出 ============
+function exportCSV(filename, headers, rows) {
+  const bom = '\uFEFF';
+  const csv = bom + [headers.join(','), ...rows.map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  toast('已导出 ' + filename);
+}
+function exportPostsCSV() {
+  if (!postsCache.length) { toast('暂无数据', 'error'); return; }
+  exportCSV('posts_export.csv', ['ID','昵称','内容','分类','状态','校区','点赞','评论','创建时间'], postsCache.map(p => [p._id, p.nickname||'', (p.content||'').slice(0,100), p.category||'', p.status||'', campusName(p.campusId), p.likes||0, p.comments||0, p.createTime||'']));
+}
+function exportGoodsCSV() {
+  if (!goodsCache.length) { toast('暂无数据', 'error'); return; }
+  exportCSV('goods_export.csv', ['ID','标题','分类','价格','状态','创建时间'], goodsCache.map(g => [g._id, g.title||'', g.category||'', g.price||'', g.status||'', g.createTime||'']));
+}
+function exportUsersCSV() {
+  if (!usersCache.length) { toast('暂无数据', 'error'); return; }
+  exportCSV('users_export.csv', ['OpenID','昵称','学院','校区','角色','状态','注册时间','最后登录'], usersCache.map(u => [u._openid||'', u.nickName||'', u.college||'', campusName(u.campusId), u.role||'user', u.status||'active', u.createTime||'', u.lastLoginTime||'']));
+}
+
+// ============ 夜间模式 ============
+function initDarkMode() {
+  const saved = localStorage.getItem('admin_dark_mode');
+  if (saved === 'true') document.documentElement.classList.add('dark');
+}
+function toggleDarkMode() {
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.setItem('admin_dark_mode', isDark ? 'true' : 'false');
+  toast(isDark ? '已切换到夜间模式' : '已切换到日间模式');
+}
+
+// ============ 浏览器通知 ============
+let notifyPermission = 'default';
+let notifyInterval = null;
+let lastNotifyReports = 0;
+let lastNotifyPending = 0;
+async function requestNotifyPermission() {
+  if (!('Notification' in window)) { toast('浏览器不支持通知', 'error'); return; }
+  const perm = await Notification.requestPermission();
+  notifyPermission = perm;
+  if (perm === 'granted') {
+    toast('通知已开启，有新举报或待审核时会提醒');
+    startNotifyCheck();
+  } else { toast('通知权限被拒绝', 'error'); }
+}
+function startNotifyCheck() {
+  if (notifyInterval) clearInterval(notifyInterval);
+  notifyInterval = setInterval(checkAndNotify, 120000);
+}
+async function checkAndNotify() {
+  if (notifyPermission !== 'granted') return;
+  try {
+    const reports = Number(document.getElementById('stat-reports')?.textContent) || 0;
+    const pending = Number(document.getElementById('stat-pending-posts')?.textContent) || 0;
+    if (reports > lastNotifyReports && reports > 0) {
+      new Notification('校园便利盒 - 新举报', { body: `有 ${reports} 条待处理举报`, icon: '🚨' });
+    }
+    if (pending > lastNotifyPending && pending > 0) {
+      new Notification('校园便利盒 - 待审核', { body: `有 ${pending} 条待审核内容`, icon: '📋' });
+    }
+    lastNotifyReports = reports;
+    lastNotifyPending = pending;
+  } catch(e) {}
+}
+
+// ============ 批量操作 ============
+let batchMode = false;
+let batchSelected = new Set();
+function toggleBatchMode(type) {
+  batchMode = !batchMode;
+  batchSelected.clear();
+  if (type === 'post') renderPosts(postsCache);
+  if (type === 'goods') renderGoods(goodsCache);
+  updateBatchBar(type);
+}
+function toggleBatchItem(id, type) {
+  if (batchSelected.has(id)) batchSelected.delete(id); else batchSelected.add(id);
+  updateBatchBar(type);
+}
+function updateBatchBar(type) {
+  const barId = `batch-bar-${type}`;
+  let bar = document.getElementById(barId);
+  if (!batchMode || batchSelected.size === 0) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = barId;
+    bar.className = 'fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-[150] bg-white rounded-2xl shadow-xl border border-primary/30 px-4 py-3 flex items-center gap-3';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `
+    <span class="text-sm font-bold text-primary">已选 ${batchSelected.size} 项</span>
+    <button onclick="doBatchAction('${type}','hide')" class="px-3 py-1.5 bg-orange-50 text-orange-700 text-xs font-bold rounded-lg">批量下架</button>
+    <button onclick="doBatchAction('${type}','del')" class="px-3 py-1.5 bg-red-50 text-red-700 text-xs font-bold rounded-lg">批量删除</button>
+    <button onclick="toggleBatchMode('${type}')" class="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">取消</button>`;
+}
+async function doBatchAction(type, act) {
+  const ids = Array.from(batchSelected);
+  if (!ids.length) return;
+  confirmAction(`批量${act==='hide'?'下架':'删除'}`, `确定对 ${ids.length} 项执行此操作？`, async () => {
+    for (const id of ids) {
+      try {
+        if (type === 'post') await doPost(act === 'hide' ? 'hide' : 'del', id);
+        if (type === 'goods') await doGoods(act === 'hide' ? 'hide' : 'del', id);
+      } catch(e) {}
+    }
+    batchMode = false; batchSelected.clear();
+    const bar = document.getElementById(`batch-bar-${type}`);
+    if (bar) bar.remove();
+    if (type === 'post') loadPosts();
+    if (type === 'goods') loadGoods();
+    logAuditAction(`批量${act==='hide'?'下架':'删除'}`, type, `${ids.length} 项`);
+  });
+}
+
+// ============ 分页状态 ============
+let postPage = 1, goodsPage = 1, userPage = 1;
+const PAGE_SIZE = 50;
+
+function setStatus(t,c) { const el=document.getElementById('connection-status'); el.className=`fixed top-0 left-0 w-full text-white text-center py-1.5 text-xs font-bold z-[100] ${c}`; el.textContent=t; }
+function fmt(d) { if(!d)return'-'; const dt=new Date(d); if(isNaN(dt))return'-'; const p=n=>String(n).padStart(2,'0'); return `${dt.getMonth()+1}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`; }
+function esc(s) { if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+/** 用于 img/video src：不要用 esc()，否则 URL 里的 & 会被转成 &amp; 导致加载失败 */
+function attrUrl(s) {
+  if (s == null || s === '') return '';
+  return String(s).replace(/"/g, '&quot;').replace(/</g, '');
+}
+function postImageList(p) {
+  if (!p) return [];
+  const arr = Array.isArray(p.images) ? [...p.images] : [];
+  if (p.image && typeof p.image === 'string' && p.image.trim()) {
+    if (!arr.includes(p.image)) arr.unshift(p.image);
+  }
+  return arr.filter(Boolean);
+}
+
+function badge(status) {
+  const m = { active:['正常','badge-active'], banned:['已封禁','badge-banned'], deleted:['已删除','badge-deleted'],
+    hidden:['已下架','badge-deleted'], pending:['待处理','badge-pending'], resolved:['已处理','badge-resolved'],
+    dismissed:['已驳回','badge-dismissed'], admin:['管理员','badge-admin'], user:['用户','badge-active'],
+    muted:['禁言中','badge-muted'], nolike:['禁赞中','badge-nolike'] };
+  const [l,c] = m[status]||[status,'badge-active'];
+  return `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${c}">${l}</span>`;
+}
+
+async function safeUpdateWhere(collection, where, data) {
+  try {
+    await db.collection(collection).where(where).update(data);
+  } catch (e) {
+    const msg = String((e && e.message) || e || '');
+    if (!msg.includes('not exist')) throw e;
+  }
+}
+
+function reportTypeLabel(targetType) {
+  if (targetType === 'post') return '帖子';
+  if (targetType === 'comment') return '评论';
+  if (targetType === 'goods') return '商品';
+  if (targetType === 'market_comment' || targetType === 'goods_comment') return '商品评论';
+  if (targetType === 'user') return '用户';
+  return targetType || '未知类型';
+}
+
+function reportTargetCollection(targetType) {
+  if (targetType === 'post') return 'posts';
+  if (targetType === 'comment') return 'comments';
+  if (targetType === 'goods') return 'market_goods';
+  if (targetType === 'market_comment' || targetType === 'goods_comment') return 'market_comments';
+  if (targetType === 'user') return 'users';
+  return '';
+}
+
+async function fetchReportTargetSummary(targetType, targetId) {
+  const collection = reportTargetCollection(targetType);
+  if (!collection || !targetId) return { content: '(未知内容)', nickname: '' };
+  try {
+    const res = await db.collection(collection).doc(targetId).get();
+    const doc = (res && (res.data && res.data[0] ? res.data[0] : res.data)) || {};
+    if (collection === 'posts') return { content: doc.title || doc.content || '(帖子无内容)', nickname: doc.nickname || '' };
+    if (collection === 'comments') return { content: doc.content || '(评论无内容)', nickname: doc.nickname || '' };
+    if (collection === 'market_goods') return { content: doc.title || doc.description || '(商品无内容)', nickname: doc.nickname || '' };
+    if (collection === 'users') return { content: `用户：${doc.nickName || '未知'}${doc.college ? `（${doc.college}）` : ''}`, nickname: doc.nickName || '' };
+    return { content: doc.content || '(评论无内容)', nickname: doc.nickname || '' };
+  } catch (e) {
+    return { content: '(已删除)', nickname: '' };
+  }
+}
+
+// ============ 导航 ============
+function go(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  // Desktop nav
+  document.querySelectorAll('.nav-d').forEach(n=>n.classList.remove('active'));
+  if(el&&el.classList.contains('nav-d')) el.classList.add('active');
+  // Mobile nav
+  document.querySelectorAll('.mnav').forEach(n=>{ n.classList.remove('active','text-primary'); n.classList.add('text-gray-400'); });
+  if(el&&el.classList.contains('mnav')) { el.classList.add('active','text-primary'); el.classList.remove('text-gray-400'); }
+  const mt = document.getElementById('mobile-title'); if(mt) mt.textContent = titles[name]||'';
+  // Load data on first visit
+  if(name==='posts'&&postsCache.length===0) loadPosts();
+  if(name==='goods'&&goodsCache.length===0) loadGoods();
+  if(name==='users') loadUsers();
+  if(name==='reports'&&reportsCache.length===0) loadReports();
+  if(name==='comments'&&commentsCache.length===0) loadComments();
+  if(name==='announcements') loadAnnouncements();
+  if(name==='activity') loadActivityZone();
+  if(name==='referral') loadReferral();
+  if(name==='dashboard') {
+    loadDashboard(true);
+    const ar = document.getElementById('dash-auto-refresh');
+    if (ar && ar.checked && !dashboardAutoRefreshTimer) toggleDashboardAutoRefresh();
+  } else if (dashboardAutoRefreshTimer) {
+    clearInterval(dashboardAutoRefreshTimer);
+    dashboardAutoRefreshTimer = null;
+  }
+}
+
+// ============ Action Sheet ============
+function openSheet(html) {
+  document.getElementById('action-sheet-content').innerHTML = html;
+  document.getElementById('action-sheet-overlay').classList.remove('hidden');
+  requestAnimationFrame(()=>document.getElementById('action-sheet').classList.remove('hidden-sheet'));
+}
+function closeSheet() {
+  document.getElementById('action-sheet').classList.add('hidden-sheet');
+  setTimeout(()=>document.getElementById('action-sheet-overlay').classList.add('hidden'), 300);
+}
+
+// ============ 搜索防抖 ============
+function debounceSearch(type) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const input = document.getElementById(type + '-search');
+    const kw = (input && input.value ? input.value : '').toLowerCase().trim();
+    if (type === 'post') {
+      if (!kw) renderPosts(postsCache);
+      else renderPosts(postsCache.filter(p => (p.content || '').toLowerCase().includes(kw) || (p.nickname || '').toLowerCase().includes(kw) || (p.title || '').toLowerCase().includes(kw)));
+    }
+    if (type === 'goods') {
+      if (!kw) renderGoods(goodsCache);
+      else renderGoods(goodsCache.filter(g => (g.title || '').toLowerCase().includes(kw) || (g.description || '').toLowerCase().includes(kw) || (g.nickname || '').toLowerCase().includes(kw) || String(g.price || '').toLowerCase().includes(kw)));
+    }
+    if (type === 'user') {
+      loadUsers();
+      return;
+    }
+    if (type === 'comment') {
+      if (!kw) renderComments(commentsCache);
+      else renderComments(commentsCache.filter(c => (c.content || '').toLowerCase().includes(kw) || (c.nickname || '').toLowerCase().includes(kw)));
+    }
+  }, 300);
+}
+
+// ============ 初始化 & 全局加载 ============
+async function initAdmin() {
+  try {
+    initDarkMode();
+    loadAuditLogs();
+    initCampusFilters();
+    if ('Notification' in window) notifyPermission = Notification.permission;
+    setStatus('正在连接...','bg-blue-500');
+    await auth.anonymousAuthProvider().signIn();
+    setStatus('已连接','bg-green-500');
+    if (!hasAdminSecret()) {
+      toast('未配置 CONFIG.ADMIN_WEB_SECRET：写操作将直连数据库。请在云函数 adminPanel 设置环境变量 ADMIN_WEB_SECRET 后在此页填写相同密钥。', 'error');
+    }
+    await loadAllData();
+    const ar = document.getElementById('dash-auto-refresh');
+    if (ar) ar.checked = true;
+    toggleDashboardAutoRefresh();
+    if (notifyPermission === 'granted') startNotifyCheck();
+    setTimeout(()=>{ document.getElementById('connection-status').style.display='none'; }, 1500);
+  } catch(e) { setStatus('连接失败: '+e.message,'bg-red-600'); }
+}
+async function loadAllData() {
+  const jobs = [
+    ['dashboard', loadDashboard],
+    ['posts', loadPosts],
+    ['goods', loadGoods],
+    ['users', loadUsers],
+    ['reports', loadReports],
+    ['comments', loadComments],
+    ['announcements', loadAnnouncements],
+    ['activity', loadActivityZone],
+    ['referral', loadReferral]
+  ];
+  const results = await Promise.allSettled(jobs.map(([, fn]) => fn()));
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') console.error('[admin] load ' + jobs[i][0] + ' failed', r.reason);
+  });
+  renderAuditLog();
+  loadSettingsPanel();
+}
+
+// ============ 数据看板 ============
+let dashboardAutoRefreshTimer = null;
+
+function getDashboardTrendDays() {
+  const el = document.getElementById('dash-trend-days');
+  return el ? Number(el.value) || 7 : 7;
+}
+
+function toggleDashboardAutoRefresh() {
+  const on = document.getElementById('dash-auto-refresh') && document.getElementById('dash-auto-refresh').checked;
+  if (dashboardAutoRefreshTimer) {
+    clearInterval(dashboardAutoRefreshTimer);
+    dashboardAutoRefreshTimer = null;
+  }
+  if (on) {
+    dashboardAutoRefreshTimer = setInterval(() => {
+      const panel = document.getElementById('panel-dashboard');
+      if (panel && panel.classList.contains('active')) loadDashboard(true);
+    }, 60000);
+  }
+}
+
+function renderTrendLineChart(containerId, labels, series) {
+  const el = document.getElementById(containerId);
+  if (!el || !labels || !labels.length) return;
+  const W = 640;
+  const H = 200;
+  const pad = { l: 40, r: 16, t: 12, b: 32 };
+  const all = series.flatMap((s) => (s.values || []).map((v) => Number(v) || 0));
+  const max = Math.max(1, ...all);
+  const n = labels.length;
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+  const xAt = (i) => pad.l + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yAt = (v) => pad.t + innerH - (v / max) * innerH;
+  const gridY = [0, 0.5, 1].map((r) => {
+    const y = pad.t + innerH * (1 - r);
+    const val = Math.round(max * r);
+    return `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}" stroke="#E2E8F0" stroke-width="1"/><text x="${pad.l - 6}" y="${y + 4}" text-anchor="end" font-size="9" fill="#94A3B8">${val}</text>`;
+  }).join('');
+  const paths = series.map((s) => {
+    const pts = (s.values || []).map((v, i) => `${xAt(i)},${yAt(Number(v) || 0)}`);
+    const dots = (s.values || []).map((v, i) => `<circle cx="${xAt(i)}" cy="${yAt(Number(v) || 0)}" r="3" fill="${s.color}"/>`).join('');
+    return `<path d="M${pts.join(' L')}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+  }).join('');
+  const xLabels = labels.map((lb, i) => `<text x="${xAt(i)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#94A3B8">${esc(lb)}</text>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="趋势折线图">${gridY}${paths}${xLabels}</svg>`;
+}
+
+function renderPersonaSections(persona) {
+  if (!persona) return;
+  const hint = document.getElementById('persona-sample-hint');
+  if (hint) hint.textContent = `基于最近 ${persona.sampleSize || 0} 名活跃用户样本统计（全量用户约等于注册总数）。`;
+  renderDistribution('persona-activity', persona.activitySegments, '暂无');
+  renderDistribution('persona-profile', persona.profileSegments, '暂无');
+  renderDistribution('persona-acquisition', persona.acquisition, '暂无');
+  renderDistribution('persona-nickname', persona.nicknameSegments, '暂无');
+  renderDistribution('persona-college', persona.collegeTop, '暂无学院数据');
+}
+
+async function loadAnalyticsHistory() {
+  const wrap = document.getElementById('history-table-wrap');
+  const note = document.getElementById('history-note');
+  if (!wrap) return;
+  wrap.innerHTML = '<p class="text-xs text-gray-400 py-4 text-center">加载中...</p>';
+  try {
+    const days = Number(document.getElementById('dash-history-days')?.value) || 30;
+    const res = await adminReadWithDbFallback('getAnalyticsHistory', { days }, async () => ({ rows: [], note: '需云函数支持' }));
+    const data = res.data || {};
+    if (note) note.textContent = data.note || '';
+    const rows = data.rows || [];
+    if (!rows.length) {
+      wrap.innerHTML = '<p class="text-xs text-gray-400 py-6 text-center">暂无历史记录。请每天打开看板一次，系统会自动保存当日快照。</p>';
+      return;
+    }
+    wrap.innerHTML = `<table class="hist-table"><thead><tr><th>日期</th><th>新用户</th><th>新帖</th><th>登录</th><th>总用户</th><th>总帖子</th><th>7日活跃</th></tr></thead><tbody>${rows.map((r) => {
+      const dm = r.dayMetrics || {};
+      const ov = r.overview || {};
+      const ac = r.activity || {};
+      return `<tr><td class="font-mono">${esc(r.date)}</td><td>${dm.newUsers ?? '-'}</td><td>${dm.newPosts ?? '-'}</td><td>${dm.logins ?? '-'}</td><td>${ov.totalUsers ?? '-'}</td><td>${ov.totalPosts ?? '-'}</td><td>${ac.login7d ?? '-'}</td></tr>`;
+    }).join('')}</tbody></table>`;
+  } catch (e) {
+    wrap.innerHTML = `<p class="text-center text-red-500 py-4 text-xs">${esc(formatPanelError(e))}</p>`;
+  }
+}
+
+function renderDistribution(containerId, rows, emptyText) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!rows || !rows.length) {
+    el.innerHTML = `<p class="text-xs text-gray-400 text-center py-3">${emptyText || '暂无数据'}</p>`;
+    return;
+  }
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  el.innerHTML = rows.map((r) => {
+    const pct = Math.round((r.count / max) * 100);
+    const name = String(r.name || '未分类').length > 12 ? String(r.name).slice(0, 11) + '…' : r.name;
+    return `<div class="dist-row"><span class="w-20 truncate text-slate-600" title="${esc(r.name)}">${esc(name)}</span><div class="dist-bar"><div class="dist-fill" style="width:${pct}%"></div></div><span class="font-mono text-slate-500 w-8 text-right">${r.count}</span></div>`;
+  }).join('');
+}
+
+function renderFunnel(funnel) {
+  const el = document.getElementById('funnel-container');
+  if (!el || !funnel) return;
+  const total = funnel.totalUsers || 1;
+  const steps = [
+    { label: '注册用户', value: funnel.totalUsers },
+    { label: '资料已完善', value: funnel.profileComplete },
+    { label: '曾发帖用户', value: funnel.usersWithPosts }
+  ];
+  el.innerHTML = steps.map((s) => {
+    const pct = Math.min(100, Math.round((s.value / total) * 100));
+    return `<div class="funnel-row"><div class="funnel-label"><span>${esc(s.label)}</span><span class="font-mono font-semibold">${s.value} <span class="text-slate-400 font-normal">(${pct}%)</span></span></div><div class="funnel-track"><div class="funnel-bar" style="width:${pct}%"></div></div></div>`;
+  }).join('') + `<p class="text-[10px] text-slate-400 mt-3">资料完成率 ${funnel.profileCompleteRate || 0}% · 发帖用户占比 ${funnel.postUserRate || 0}%</p>`;
+}
+
+function applyDashboardOverview(d, activity) {
+  if (!d) return;
+  const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v != null ? v : '-'; };
+  set('stat-posts', d.totalPosts);
+  set('stat-users', d.totalUsers);
+  set('stat-reports', d.pendingReports);
+  set('stat-pending-posts', d.pendingPosts);
+  set('stat-today-posts', d.todayPosts);
+  set('stat-today-users', d.todayUsers);
+  set('stat-comments', d.totalComments);
+  set('stat-likes', d.totalLikes);
+  set('stat-follows', d.totalFollows);
+  set('stat-messages', d.totalMessages);
+  set('stat-market', d.marketGoods);
+  set('stat-referral', d.peerReferrals);
+  if (activity) {
+    set('stat-login-today', activity.loginToday);
+    set('stat-login-7d', activity.login7d);
+    set('stat-login-30d', activity.login30d);
+  }
+  const pendingP = { total: d.pendingPosts || 0 };
+  const pendingR = { total: d.pendingReports || 0 };
+  ['dbadge-posts', 'mbadge-posts'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (pendingP.total > 0) { el.textContent = pendingP.total; el.classList.remove('hidden'); } else el.classList.add('hidden');
+  });
+  ['dbadge-reports', 'mbadge-reports'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (pendingR.total > 0) { el.textContent = pendingR.total; el.classList.remove('hidden'); } else el.classList.add('hidden');
+  });
+}
+
+async function loadDashboard(silent) {
+  try {
+    let analytics = null;
+    const trendDays = getDashboardTrendDays();
+    if (hasAdminSecret()) {
+      try {
+        const res = await adminReadWithDbFallback('getAnalyticsDashboard', { trendDays, saveSnapshot: true }, async () => null);
+        if (res && res.data) analytics = res.data;
+      } catch (e) { console.warn('getAnalyticsDashboard', e); }
+    }
+
+    if (analytics) {
+      applyDashboardOverview(analytics.overview, analytics.activity);
+      const at = document.getElementById('dash-updated-at');
+      if (at && analytics.generatedAt) {
+        const t = new Date(analytics.generatedAt);
+        at.textContent = '更新于 ' + t.toLocaleString('zh-CN', { hour12: false });
+      }
+      const rh = document.getElementById('dash-refresh-hint');
+      if (rh) rh.textContent = analytics.refreshHint || '';
+      if (analytics.trends) {
+        renderTrendLineChart('chart-trends-line', analytics.trends.labels, [
+          { name: '新用户', color: '#10B981', values: analytics.trends.newUsers },
+          { name: '新帖子', color: '#F59E0B', values: analytics.trends.newPosts },
+          { name: '当日登录', color: '#2563EB', values: analytics.trends.logins }
+        ]);
+      }
+      renderFunnel(analytics.funnel);
+      renderPersonaSections(analytics.userPersona);
+      renderDistribution('campus-distribution', analytics.campusDistribution, '暂无校区数据');
+      renderDistribution('post-categories-chart', analytics.postCategories, '暂无帖子');
+      renderDistribution('market-categories-chart', analytics.marketCategories, '暂无商品');
+      const ins = document.getElementById('dash-insights');
+      if (ins) {
+        ins.innerHTML = (analytics.insights || []).map((t) => `<div class="insight-item">${esc(t)}</div>`).join('') || '<p class="text-xs text-gray-400">暂无建议</p>';
+      }
+      await loadAnalyticsHistory();
+      if (!silent) toast('看板已更新', 'success');
+    } else {
+      const st = await adminReadWithDbFallback('getStats', {}, async () => {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const [
+          totalPosts, todayPosts, pendingPosts, totalUsers, todayUsers, pendingReports, totalComments, marketComments
+        ] = await Promise.all([
+          db.collection('posts').where({ status: 'active' }).count(),
+          db.collection('posts').where({ status: 'active', createTime: _.gte(todayStart) }).count(),
+          db.collection('posts').where({ status: 'pending' }).count(),
+          db.collection('users').where({ status: 'active' }).count(),
+          db.collection('users').where({ createTime: _.gte(todayStart) }).count(),
+          db.collection('reports').where({ status: 'pending' }).count(),
+          db.collection('comments').where({ status: 'active' }).count(),
+          db.collection('market_comments').where({ status: 'active' }).count().catch(() => ({ total: 0 }))
+        ]);
+        return {
+          totalPosts: totalPosts.total,
+          todayPosts: todayPosts.total,
+          pendingPosts: pendingPosts.total,
+          totalUsers: totalUsers.total,
+          todayUsers: todayUsers.total,
+          pendingReports: pendingReports.total,
+          totalComments: totalComments.total + (marketComments.total || 0)
+        };
+      });
+      applyDashboardOverview(st.data || {}, null);
+      const ins = document.getElementById('dash-insights');
+      if (ins) ins.innerHTML = '<div class="insight-item">请部署最新云函数 dbOperations / adminPanel 后刷新，以加载完整分析看板。</div>';
+    }
+    const r = await adminReadWithDbFallback('getPosts', { page: 1, pageSize: 5, status: 'active' }, async () => {
+      const rp = await db.collection('posts').where({ status: 'active' }).orderBy('createTime', 'desc').limit(5).get();
+      return rp.data || [];
+    });
+    const rpData = r.data || [];
+    await translateMediaLinks(rpData);
+    document.getElementById('recent-posts').innerHTML = rpData.length===0?'<p class="text-xs text-gray-400 text-center py-3">暂无</p>':rpData.map(p=>`
+      <div class="flex items-center gap-2.5 py-1.5 border-b border-gray-50 last:border-0">
+        <div class="w-7 h-7 rounded-full bg-gray-100 overflow-hidden flex-shrink-0"><img src="${attrUrl(p.avatar)}" class="w-full h-full object-cover" onerror="this.style.display='none'"/></div>
+        <div class="flex-1 min-w-0"><div class="text-[11px] font-bold truncate">${esc(p.nickname)}</div><p class="text-[10px] text-gray-500 truncate">${esc(p.content)}</p></div>
+        <span class="text-[9px] text-gray-300 flex-shrink-0">${fmt(p.createTime)}</span>
+      </div>`).join('');
+    const rr = await adminReadWithDbFallback('getReports', { page: 1, pageSize: 5, status: 'pending' }, async () => {
+      const r0 = await db.collection('reports').where({ status: 'pending' }).orderBy('createTime', 'desc').limit(5).get();
+      return r0.data || [];
+    });
+    const rrData = rr.data || [];
+    document.getElementById('recent-reports').innerHTML = rrData.length===0?'<p class="text-xs text-gray-400 text-center py-3">暂无待处理</p>':rrData.map(r=>`
+      <div class="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+        <div><span class="text-[11px] font-bold">${esc(r.reason)}</span><span class="text-[9px] text-gray-400 ml-1">${fmt(r.createTime)}</span></div>${badge(r.status)}
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ============ 帖子管理 ============
+async function loadPosts() {
+  const c=document.getElementById('posts-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('post-status-filter').value, cf=document.getElementById('post-category-filter').value;
+    const raw = await adminReadWithDbFallback('getPosts', {
+      page: postPage,
+      pageSize: PAGE_SIZE,
+      status: sf || undefined,
+      category: cf || undefined,
+      excludeDeleted: !sf,
+      ...campusFilterPayload()
+    }, async () => {
+      let cond = {};
+      if (sf) cond.status = sf; else cond.status = _.neq('deleted');
+      if (cf) cond.category = cf;
+      const res = await db.collection('posts').where(cond).orderBy('createTime', 'desc').skip((postPage-1)*PAGE_SIZE).limit(PAGE_SIZE).get();
+      return res.data || [];
+    });
+    const list = raw.data || [];
+    await translateMediaLinks(list);
+    postsCache=list; renderPosts(postsCache);
+    const pag = document.getElementById('posts-pagination');
+    const info = document.getElementById('posts-page-info');
+    if (pag) { pag.classList.toggle('hidden', list.length === 0 && postPage === 1); }
+    if (info) info.textContent = `第 ${postPage} 页 · ${list.length} 条`;
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`; }
+}
+
+function renderPosts(posts) {
+  const c=document.getElementById('posts-container');
+  if(!posts.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无帖子</p>';return;}
+  c.innerHTML = posts.map(p=>{
+    const anon=p.isAnonymous;
+    const imgs = postImageList(p);
+    const vidList = Array.isArray(p.videos) ? p.videos.filter(Boolean) : [];
+    const batchCb = batchMode ? `<label class="flex items-center gap-2 mb-2 cursor-pointer"><input type="checkbox" class="rounded" ${batchSelected.has(p._id)?'checked':''} onchange="toggleBatchItem('${p._id}','post')"/><span class="text-[10px] text-gray-500">选中</span></label>` : '';
+    return `<div id="post-${p._id}" class="post-card bg-white rounded-2xl border border-slate-100/80 p-4 md:p-5 transition-all">${batchCb}
+      <div class="flex items-start gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full ${anon?'bg-violet-100':'bg-slate-100'} overflow-hidden flex-shrink-0 flex items-center justify-center ring-2 ring-white shadow-sm">
+          ${anon?'<span class="material-symbols-outlined text-violet-600 text-lg">masks</span>':`<img src="${attrUrl(p.avatar)}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined text-slate-400 text-lg\\'>person</span>'"/>`}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="font-headline font-bold text-sm text-slate-800">${esc(p.nickname||'未知')}</span>
+            ${p.isTop?'<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">置顶</span>':''}
+            ${badge(p.status||'active')}
+          </div>
+          <div class="text-[11px] text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
+            <span>${fmt(p.createTime)}</span><span class="text-slate-300">·</span><span class="text-primary/90 font-medium">${esc(p.category||'')}</span>
+            ${p.campusId ? `<span class="campus-chip ml-1">${esc(campusName(p.campusId))}</span>` : ''}
+            <button type="button" class="ml-auto text-[10px] text-slate-400 hover:text-primary font-mono" title="复制帖子 ID" onclick="copyPostId(${JSON.stringify(String(p._id))})">复制ID</button>
+          </div>
+        </div>
+      </div>
+      ${p.title?`<div class="font-headline font-bold text-sm text-slate-800 mb-1.5">${esc(p.title)}</div>`:''}
+      <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words line-clamp-6">${esc(p.content)}</p>
+      ${imgs.length > 0 ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wide">图片 ${imgs.length}</p><div class="img-grid">${imgs.map((img) => {
+        const safe = attrUrl(img);
+        const go = encodeURIComponent(img);
+        return `<div class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-100 group">
+          <img src="${safe}" alt="" class="w-full h-full object-cover cursor-zoom-in group-hover:scale-[1.02] transition-transform" loading="lazy" referrerpolicy="no-referrer" onclick="openMediaUrl('${go}')"/>
+        </div>`;
+      }).join('')}</div><p class="text-[10px] text-slate-400 mt-1.5">点击图片可在新标签查看原图（临时链约 2 小时有效）</p></div>` : ''}
+      ${vidList.length > 0 ? `<div class="mt-3 space-y-2"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">视频</p>${vidList.map(vid => `<video src="${attrUrl(vid)}" controls class="w-full max-h-48 rounded-xl bg-black" preload="metadata"></video>`).join('')}</div>` : ''}
+      <div class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+        <span class="inline-flex items-center gap-1"><span class="text-red-400">❤️</span>${p.likes||0}</span>
+        <span class="inline-flex items-center gap-1"><span class="text-slate-400">💬</span>${p.comments||0}</span>
+        ${p.location?`<span class="truncate max-w-[200px]">📍 ${esc(p.location)}</span>`:''}
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4">
+        <button onclick="doPost('top','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl ${p.isTop?'bg-amber-50 text-amber-800 border border-amber-100':'bg-slate-50 text-slate-700 border border-slate-100'} active:scale-95">${p.isTop?'取消置顶':'置顶'}</button>
+        <button onclick="doPost('hide','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-orange-50 text-orange-700 border border-orange-100 active:scale-95">下架</button>
+        <button onclick="doPost('del','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-red-50 text-red-700 border border-red-100 active:scale-95">删除</button>
+        ${p.status==='hidden'?`<button onclick="doPost('restore','${p._id}')" class="card-action flex-1 min-w-[100px] text-xs font-bold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 active:scale-95">恢复</button>`:''}
+        ${p.status==='pending'?`<button onclick="doPost('approve','${p._id}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-sky-50 text-sky-800 border border-sky-100">通过</button><button onclick="doPost('reject','${p._id}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-rose-50 text-rose-700 border border-rose-100">驳回</button>`:''}
+        ${!p.isLocked?`<button onclick="doPost('lock','${p._id}')" class="card-action flex-1 min-w-[88px] text-xs font-bold rounded-xl bg-slate-50 text-slate-600 border border-slate-100">锁定</button>`:''}
+      </div>
+    </div>`}).join('');
+}
+
+async function doPost(act,id) {
+  const execPost = async () => {
+    try {
+      if (act === 'reject') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('rejectPost', { postId: id }), '驳回失败'); toast('已驳回'); },
+          async () => { await db.collection('posts').doc(id).update({ status: 'rejected' }); toast('已驳回'); }
+        );
+        logAuditAction('驳回帖子', id); loadPosts(); return;
+      }
+      if (act === 'lock') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('lockPost', { postId: id }), '锁定失败'); toast('已锁定'); },
+          async () => { await db.collection('posts').doc(id).update({ isLocked: true }); toast('已锁定'); }
+        );
+        logAuditAction('锁定帖子', id); loadPosts(); return;
+      }
+      if (act === 'top') {
+        await adminWriteWithDbFallback(
+          async () => {
+            const raw = assertCloudOk(await adminCall('toggleTopPost', { postId: id }), '置顶失败');
+            toast(raw.data && raw.data.isTop ? '已置顶' : '已取消置顶');
+          },
+          async () => {
+            const p = await db.collection('posts').doc(id).get(); const d = p.data[0] || p.data;
+            await db.collection('posts').doc(id).update({ isTop: !d.isTop });
+            toast(d.isTop ? '已取消置顶' : '已置顶');
+          }
+        );
+        logAuditAction('置顶帖子', id); loadPosts(); return;
+      }
+      if (act === 'hide') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'hidden' }), '下架失败'); toast('已下架'); },
+          async () => { await db.collection('posts').doc(id).update({ status: 'hidden' }); toast('已下架'); }
+        );
+        logAuditAction('下架帖子', id); animRm(id, 'post'); return;
+      }
+      if (act === 'del') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'deleted' }), '删除失败'); toast('已删除'); },
+          async () => { await db.collection('posts').doc(id).update({ status: 'deleted' }); toast('已删除'); }
+        );
+        logAuditAction('删除帖子', id); animRm(id, 'post'); return;
+      }
+      if (act === 'restore' || act === 'approve') {
+        await adminWriteWithDbFallback(
+          async () => {
+            assertCloudOk(await adminCall('setPostStatus', { postId: id, status: 'active' }), '更新失败');
+            toast(act === 'approve' ? '已审核通过！前台可见' : '已恢复');
+          },
+          async () => {
+            await db.collection('posts').doc(id).update({ status: 'active' });
+            toast(act === 'approve' ? '已审核通过！前台可见' : '已恢复');
+          }
+        );
+        logAuditAction(act === 'approve' ? '审核通过' : '恢复帖子', id); loadPosts(); return;
+      }
+    } catch(e) { toast('失败: '+e.message,'error'); }
+  };
+  if (act === 'del') { confirmAction('删除帖子', '删除后用户不可见，确定继续？', execPost); }
+  else if (act === 'hide') { confirmAction('下架帖子', '下架后前台不再显示，确定？', execPost); }
+  else { execPost(); }
+}
+function animRm(id,pfx) { const el=document.getElementById(`${pfx}-${id}`); if(el){el.classList.add('fade-out');setTimeout(()=>el.remove(),300);} }
+
+// ============ 集市管理 ============
+async function loadGoods() {
+  const c=document.getElementById('goods-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('goods-status-filter').value, cf=document.getElementById('goods-category-filter').value;
+    const raw = await adminReadWithDbFallback('getMarketGoodsList', { page: goodsPage, pageSize: PAGE_SIZE, status: sf || undefined, category: cf || undefined, ...campusFilterPayload() }, async () => {
+      let cond = {};
+      if (sf) cond.status = sf; else cond.status = _.neq('deleted');
+      if (cf) cond.category = cf;
+      const fallbackRes = await db.collection('market_goods').where(cond).orderBy('createTime', 'desc').skip((goodsPage-1)*PAGE_SIZE).limit(PAGE_SIZE).get();
+      return fallbackRes.data || [];
+    });
+    const items = raw.data || [];
+    await translateMediaLinks(items);
+    goodsCache = items; renderGoods(goodsCache);
+    const pag = document.getElementById('goods-pagination');
+    const info = document.getElementById('goods-page-info');
+    if (pag) { pag.classList.toggle('hidden', items.length === 0 && goodsPage === 1); }
+    if (info) info.textContent = `第 ${goodsPage} 页 · ${items.length} 条`;
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`; }
+}
+function renderGoods(goods) {
+  const c=document.getElementById('goods-container');
+  if(!goods.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无商品</p>';return;}
+  c.innerHTML = goods.map(g=>{
+    const batchCb = batchMode ? `<label class="flex items-center gap-2 mb-2 cursor-pointer"><input type="checkbox" class="rounded" ${batchSelected.has(g._id)?'checked':''} onchange="toggleBatchItem('${g._id}','goods')"/><span class="text-[10px] text-gray-500">选中</span></label>` : '';
+    return `
+    <div id="goods-${g._id}" class="post-card bg-white rounded-2xl border border-slate-100 p-4">${batchCb}<div class="flex gap-4">
+      <div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 ring-1 ring-slate-100"><img src="${attrUrl(g.images?g.images[0]:'')}" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'"/></div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-0.5"><span class="font-bold text-xs truncate">${esc(g.title)}</span>${badge(g.status)}</div>
+        <div class="text-[10px] text-gray-400 mb-1">${esc(g.category)} · ¥${g.price}</div>
+        <div class="flex gap-1">
+          <button onclick="doGoods('hide','${g._id}')" class="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-lg">下架</button>
+          <button onclick="doGoods('del','${g._id}')" class="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg">删除</button>
+          ${g.status==='hidden'?`<button onclick="doGoods('restore','${g._id}')" class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg">恢复</button>`:''}
+        </div>
+      </div>
+    </div></div>`;
+  }).join('');
+}
+
+async function doGoods(act,id) {
+  const execGoods = async () => {
+    try {
+      if (act === 'hide') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'hidden' }), '下架失败'); toast('已下架'); },
+          async () => { await db.collection('market_goods').doc(id).update({ status: 'hidden' }); toast('已下架'); }
+        );
+        logAuditAction('下架商品', id); animRm(id, 'goods'); return;
+      }
+      if (act === 'del') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'deleted' }), '删除失败'); toast('已删除'); },
+          async () => { await db.collection('market_goods').doc(id).update({ status: 'deleted', deleteTime: new Date() }); toast('已删除'); }
+        );
+        logAuditAction('删除商品', id); animRm(id, 'goods'); return;
+      }
+      if (act === 'restore') {
+        await adminWriteWithDbFallback(
+          async () => { assertCloudOk(await adminCall('setGoodsStatus', { goodsId: id, status: 'active' }), '恢复失败'); toast('已恢复'); },
+          async () => { await db.collection('market_goods').doc(id).update({ status: 'active' }); toast('已恢复'); }
+        );
+        logAuditAction('恢复商品', id); loadGoods(); return;
+      }
+    } catch(e) { toast('失败: '+e.message,'error'); }
+  };
+  if (act === 'del') { confirmAction('删除商品', '删除后不可恢复，确定？', execGoods); }
+  else if (act === 'hide') { confirmAction('下架商品', '下架后买家不可见，确定？', execGoods); }
+  else { execGoods(); }
+}
+
+// ============ 用户管理 ============
+function userMatchesKeywordLocal(u, kw) {
+  if (!kw) return true;
+  const k = kw.toLowerCase();
+  const nick = String(u.nickName || u.nickname || '').toLowerCase();
+  const college = String(u.college || '').toLowerCase();
+  const campus = String(u.campusName || '').toLowerCase();
+  const openid = String(u._openid || '');
+  const role = String(u.role || '');
+  if (nick.includes(k) || college.includes(k) || campus.includes(k) || openid.includes(k)) return true;
+  if (/管理员|admin/.test(k) && role === 'admin') return true;
+  if (/普通|用户|^user$/.test(k) && role === 'user') return true;
+  return false;
+}
+
+async function loadUsers() {
+  const c=document.getElementById('users-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('user-status-filter').value;
+    const rf=document.getElementById('user-role-filter').value;
+    const kw = (document.getElementById('user-search') && document.getElementById('user-search').value || '').trim();
+    const raw = await adminReadWithDbFallback('getUsers', {
+      page: userPage,
+      pageSize: kw ? 200 : PAGE_SIZE,
+      status: sf || undefined,
+      role: rf || undefined,
+      keyword: kw || undefined,
+      ...campusFilterPayload()
+    }, async () => {
+      let cond = {};
+      if (sf) cond.status = sf;
+      if (rf) cond.role = rf;
+      const cw = getGlobalCampusId();
+      if (cw) {
+        if (cw === 'guit-hangtian') cond = _.or ? _.or([{ campusId: cw }, { campusId: _.exists(false) }]) : cond;
+        else cond.campusId = cw;
+      }
+      const limit = kw ? 500 : 80;
+      const res = await db.collection('users').where(cond).orderBy('createTime', 'desc').limit(limit).get();
+      let data = res.data || [];
+      if (kw) data = data.filter(u => userMatchesKeywordLocal(u, kw));
+      return data;
+    });
+    const list = raw.data || [];
+    await translateMediaLinks(list);
+    usersCache=list; renderUsers(usersCache);
+    const pag = document.getElementById('users-pagination');
+    const info = document.getElementById('users-page-info');
+    if (pag) { pag.classList.toggle('hidden', list.length === 0 && userPage === 1); }
+    if (info) info.textContent = `第 ${userPage} 页 · ${list.length} 条`;
+  } catch(e) {
+    c.innerHTML = `<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`
+  }
+}
+
+function renderUsers(users) {
+  const c=document.getElementById('users-container');
+  if(!users.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无用户</p>';return;}
+  c.innerHTML = users.map(u=>`
+    <div id="user-${u._id}" class="list-card bg-white rounded-xl border border-gray-100 p-3.5 flex items-center gap-3 active:bg-gray-50 transition-all cursor-pointer w-full" onclick="showUserSheet('${u._openid}')">
+      <div class="w-11 h-11 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+        <img src="${attrUrl(u.avatarUrl)}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-primary/10 flex items-center justify-center\\'><span class=\\'material-symbols-outlined text-primary text-lg\\'>person</span></div>'"/>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="font-bold text-xs">${esc(u.nickName||'未设置')}</span>${badge(u.status||'active')}${u.role==='admin'?badge('admin'):''}${u.isMuted?badge('muted'):''}${u.isLikeBanned?badge('nolike'):''}</div>
+        <div class="text-[10px] text-gray-400 truncate">${esc(u.college||'未设置')}${u.campusId ? ' · '+esc(campusName(u.campusId)) : ''} · ${fmt(u.createTime)}</div>
+      </div>
+      <span class="material-symbols-outlined text-gray-300 text-lg flex-shrink-0">chevron_right</span>
+    </div>`).join('');
+}
+
+// 用户详情 Sheet
+async function showUserSheet(openid) {
+  openSheet('<p class="text-center py-8 text-gray-400 text-sm">加载中...</p>');
+  try {
+    let u, pc, fic, foc, rp
+    if (hasAdminSecret()) {
+      try {
+        const raw = assertCloudOk(await adminCall('getUserAdminDetail', { targetOpenid: openid }), '加载用户失败')
+        const d = raw.data || {}
+        u = d.user
+        if (!u) { openSheet('<p class="text-center py-8 text-red-500">用户不存在</p>'); return }
+        pc = { total: d.postCount != null ? d.postCount : 0 }
+        fic = { total: d.followingCount != null ? d.followingCount : 0 }
+        foc = { total: d.followerCount != null ? d.followerCount : 0 }
+        rp = { data: Array.isArray(d.recentPosts) ? d.recentPosts : [] }
+      } catch (e) {
+        if (!isCloudPermissionDenied(e)) throw e
+      }
+    }
+    if (!u) {
+      const ur = await db.collection('users').where({ _openid: openid }).get()
+      if (!ur.data.length) { openSheet('<p class="text-center py-8 text-red-500">用户不存在</p>'); return }
+      u = ur.data[0]
+      ;[pc, fic, foc] = await Promise.all([
+        db.collection('posts').where({ _openid: openid, status: 'active' }).count(),
+        db.collection('follows').where({ _openid: openid }).count(),
+        db.collection('follows').where({ targetOpenid: openid }).count()
+      ])
+      rp = await db.collection('posts').where({ _openid: openid }).orderBy('createTime', 'desc').limit(3).get()
+    }
+    await translateMediaLinks([u])
+    if (rp.data && rp.data.length) await translateMediaLinks(rp.data)
+
+    // Calculate ban expiry text
+    let banText = '';
+    if(u.status==='banned' && u.banExpiry) {
+      const exp = new Date(u.banExpiry);
+      if(exp > new Date()) banText = `封禁至 ${fmt(u.banExpiry)}`;
+      else banText = '封禁已过期';
+    } else if(u.status==='banned') { banText = '永久封禁'; }
+
+    openSheet(`
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 ring-2 ring-white shadow"><img src="${attrUrl(u.avatarUrl)}" class="w-full h-full object-cover" onerror="this.style.display='none'"/></div>
+        <div class="flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap mb-0.5"><span class="font-bold text-base">${esc(u.nickName||'未设置')}</span>${badge(u.status||'active')}${u.role==='admin'?badge('admin'):''}${u.isMuted?badge('muted'):''}${u.isLikeBanned?badge('nolike'):''}</div>
+          <div class="text-xs text-gray-500">${esc(u.college||'未设置')}</div>
+          <div class="text-[10px] text-gray-300 font-mono mt-0.5 truncate">${esc(u._openid)}</div>
+        </div>
+      </div>
+      ${u.bio?`<div class="bg-gray-50 rounded-xl p-3 mb-3 text-xs text-gray-600">${esc(u.bio)}</div>`:''}
+      ${u.tags&&u.tags.length?`<div class="flex flex-wrap gap-1 mb-3">${u.tags.map(t=>`<span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] rounded-full">${esc(t)}</span>`).join('')}</div>`:''}
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <div class="bg-gray-50 rounded-xl p-2.5 text-center"><div class="text-lg font-bold text-primary">${pc.total}</div><div class="text-[9px] text-gray-400">帖子</div></div>
+        <div class="bg-gray-50 rounded-xl p-2.5 text-center"><div class="text-lg font-bold">${fic.total}</div><div class="text-[9px] text-gray-400">关注</div></div>
+        <div class="bg-gray-50 rounded-xl p-2.5 text-center"><div class="text-lg font-bold">${foc.total}</div><div class="text-[9px] text-gray-400">粉丝</div></div>
+      </div>
+      <div class="text-[10px] text-gray-400 space-y-0.5 mb-4">
+        <div>注册: ${fmt(u.createTime)} · 最后登录: ${fmt(u.lastLoginTime)}</div>
+        ${banText?`<div class="text-red-500 font-bold">${banText}</div>`:''}
+        <div>隐私协议: ${u.agreedPrivacy?'<span class="text-green-600">已同意</span>':'<span class="text-orange-500">未同意</span>'}</div>
+      </div>
+      ${rp.data.length?`<div class="border-t pt-3 mb-4"><div class="text-[10px] font-bold text-gray-500 mb-2">最近帖子</div>${rp.data.map(p=>`<p class="text-[11px] text-gray-600 truncate py-1 border-b border-gray-50">${esc(p.content)}</p>`).join('')}</div>`:''}
+
+      <div class="font-bold text-xs text-gray-500 mb-2 mt-2">快捷操作</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        ${u.role!=='admin'
+          ?`<button onclick="doUser('setAdmin','${openid}')" class="card-action text-xs font-bold rounded-xl bg-purple-50 text-purple-600 active:scale-95">设为管理员</button>`
+          :`<button onclick="doUser('removeAdmin','${openid}')" class="card-action text-xs font-bold rounded-xl bg-gray-100 text-gray-600 active:scale-95">取消管理员</button>`}
+        ${u.isMuted
+          ?`<button onclick="doUser('unmute','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">解除禁言</button>`
+          :`<button onclick="doUser('mute','${openid}')" class="card-action text-xs font-bold rounded-xl bg-yellow-50 text-yellow-700 active:scale-95">禁止评论</button>`}
+        ${u.isLikeBanned
+          ?`<button onclick="doUser('unbanlike','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">恢复点赞</button>`
+          :`<button onclick="doUser('banlike','${openid}')" class="card-action text-xs font-bold rounded-xl bg-pink-50 text-pink-600 active:scale-95">禁止点赞</button>`}
+        ${u.status!=='banned'
+          ?`<button onclick="showBanOptions('${openid}','${esc(u.nickName)}')" class="card-action text-xs font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">封禁账号</button>`
+          :`<button onclick="doUser('unban','${openid}')" class="card-action text-xs font-bold rounded-xl bg-green-50 text-green-600 active:scale-95">解除封禁</button>`}
+      </div>
+    `);
+  } catch(e) { openSheet(`<p class="text-center py-8 text-red-500">${esc(formatPanelError(e))}</p>`); }
+}
+
+// 封禁时长选择
+function showBanOptions(openid, name) {
+  openSheet(`
+    <div class="text-center mb-4">
+      <span class="material-symbols-outlined text-red-500 text-4xl mb-2">gavel</span>
+      <div class="font-bold text-base">封禁【${esc(name||'此用户')}】</div>
+      <div class="text-xs text-gray-400 mt-1">选择封禁时长，封禁期间用户无法登录和发帖</div>
+    </div>
+    <div class="space-y-2">
+      <button onclick="doBan('${openid}',1)" class="w-full card-action rounded-xl bg-orange-50 text-orange-700 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">timer</span> 封禁 1 天
+      </button>
+      <button onclick="doBan('${openid}',7)" class="w-full card-action rounded-xl bg-orange-50 text-orange-700 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">date_range</span> 封禁 7 天
+      </button>
+      <button onclick="doBan('${openid}',30)" class="w-full card-action rounded-xl bg-red-50 text-red-600 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">event_busy</span> 封禁 30 天
+      </button>
+      <button onclick="doBan('${openid}',0)" class="w-full card-action rounded-xl bg-red-100 text-red-700 font-bold text-sm active:scale-95">
+        <span class="material-symbols-outlined text-base mr-1.5">block</span> 永久封禁
+      </button>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div class="flex-1 flex items-center bg-gray-50 rounded-xl px-3" style="min-height:44px">
+          <span class="material-symbols-outlined text-base text-gray-400 mr-1.5">edit_calendar</span>
+          <input id="custom-ban-days" type="number" min="1" max="3650" placeholder="自定义天数" class="flex-1 bg-transparent text-sm outline-none border-none" style="min-height:40px" />
+          <span class="text-xs text-gray-400">天</span>
+        </div>
+        <button onclick="doCustomBan('${openid}')" class="card-action px-4 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 shrink-0" style="min-height:44px">封禁</button>
+      </div>
+      <button onclick="closeSheet()" class="w-full card-action rounded-xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 mt-2">取消</button>
+    </div>
+  `);
+}
+
+async function doBan(openid, days) {
+  try {
+    await adminWriteWithDbFallback(
+      async () => {
+        assertCloudOk(await adminCall('banUserDays', { targetOpenid: openid, days: days > 0 ? days : 0 }), '封禁失败');
+      },
+      async () => {
+        const update = { status: 'banned', banTime: new Date() };
+        if (days > 0) {
+          const expiry = new Date(); expiry.setDate(expiry.getDate() + days);
+          update.banExpiry = expiry;
+        } else { update.banExpiry = null; }
+        await db.collection('users').where({ _openid: openid }).update(update);
+        await Promise.all([
+          safeUpdateWhere('posts', { _openid: openid, status: 'active' }, { status: 'hidden' }),
+          safeUpdateWhere('market_goods', { _openid: openid, status: 'active' }, { status: 'hidden' }),
+          safeUpdateWhere('comments', { _openid: openid, status: 'active' }, { status: 'hidden' }),
+          safeUpdateWhere('market_comments', { _openid: openid, status: 'active' }, { status: 'hidden' })
+        ]);
+      }
+    );
+    closeSheet(); toast(days > 0 ? `已封禁 ${days} 天` : '已永久封禁');
+    logAuditAction(days > 0 ? `封禁用户 ${days} 天` : '永久封禁用户', openid);
+    loadUsers(); loadDashboard();
+  } catch(e) { toast('封禁失败: '+e.message,'error'); }
+}
+
+function doCustomBan(openid) {
+  const input = document.getElementById('custom-ban-days');
+  const days = parseInt(input?.value);
+  if (!days || days < 1 || days > 3650) {
+    toast('请输入 1~3650 之间的天数', 'error'); return;
+  }
+  doBan(openid, days);
+}
+
+async function doUser(act, openid) {
+  try {
+    if (act === 'setAdmin') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('setAdmin', { targetOpenid: openid }), '操作失败'); },
+        async () => {
+          const ur = await db.collection('users').where({ _openid: openid }).limit(1).get();
+          if (!ur.data.length) throw new Error('未找到该用户');
+          await db.collection('users').doc(ur.data[0]._id).update({
+            role: 'admin',
+            status: 'active',
+            banTime: null,
+            banExpiry: null
+          });
+        }
+      );
+      toast('已设为管理员');
+    } else if (act === 'removeAdmin') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('removeAdmin', { targetOpenid: openid }), '操作失败'); },
+        async () => {
+          const ur = await db.collection('users').where({ _openid: openid }).limit(1).get();
+          if (!ur.data.length) throw new Error('未找到该用户');
+          await db.collection('users').doc(ur.data[0]._id).update({ role: 'user' });
+        }
+      );
+      toast('已取消管理员');
+    } else if (act === 'mute') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('muteUser', { targetOpenid: openid }), '操作失败'); },
+        async () => { await db.collection('users').where({ _openid: openid }).update({ isMuted: true }); }
+      );
+      toast('已禁言');
+    } else if (act === 'unmute') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('unmuteUser', { targetOpenid: openid }), '操作失败'); },
+        async () => { await db.collection('users').where({ _openid: openid }).update({ isMuted: false }); }
+      );
+      toast('已解除禁言');
+    } else if (act === 'banlike') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('banLikeUser', { targetOpenid: openid }), '操作失败'); },
+        async () => { await db.collection('users').where({ _openid: openid }).update({ isLikeBanned: true }); }
+      );
+      toast('已禁止点赞');
+    } else if (act === 'unbanlike') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('unbanLikeUser', { targetOpenid: openid }), '操作失败'); },
+        async () => { await db.collection('users').where({ _openid: openid }).update({ isLikeBanned: false }); }
+      );
+      toast('已恢复点赞');
+    } else if (act === 'unban') {
+      await adminWriteWithDbFallback(
+        async () => { assertCloudOk(await adminCall('unbanUser', { targetOpenid: openid }), '操作失败'); },
+        async () => {
+          await db.collection('users').where({ _openid: openid }).update({ status: 'active', banTime: null, banExpiry: null });
+          await Promise.all([
+            safeUpdateWhere('posts', { _openid: openid, status: 'hidden' }, { status: 'active' }),
+            safeUpdateWhere('market_goods', { _openid: openid, status: 'hidden' }, { status: 'active' }),
+            safeUpdateWhere('comments', { _openid: openid, status: 'hidden' }, { status: 'active' }),
+            safeUpdateWhere('market_comments', { _openid: openid, status: 'hidden' }, { status: 'active' })
+          ]);
+        }
+      );
+      toast('已解封');
+    }
+    logAuditAction(act, openid);
+    closeSheet(); loadUsers(); loadDashboard();
+  } catch(e) { toast('操作失败: '+e.message,'error'); }
+}
+
+// ============ 举报管理 ============
+async function loadReports() {
+  const c=document.getElementById('reports-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const sf=document.getElementById('report-status-filter').value;
+    const raw = await adminReadWithDbFallback('getReports', { page: 1, pageSize: 50, status: sf || undefined }, async () => {
+      let cond = {};
+      if (sf) cond.status = sf;
+      const res = await db.collection('reports').where(cond).orderBy('createTime', 'desc').limit(50).get();
+      return res.data || [];
+    });
+    const rows = raw.data || [];
+    reportsCache = rows;
+    for (const r of reportsCache) {
+      if (r.targetContent != null && r.targetContent !== '') {
+        r._tc = r.targetContent;
+        r._tn = r.targetNickname || '';
+        r._typeLabel = reportTypeLabel(r.targetType);
+      } else {
+        const summary = await fetchReportTargetSummary(r.targetType, r.targetId);
+        r._tc = summary.content;
+        r._tn = summary.nickname;
+        r._typeLabel = reportTypeLabel(r.targetType);
+      }
+    }
+    renderReports(reportsCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`; }
+}
+
+function renderReports(reports) {
+  const c=document.getElementById('reports-container');
+  if(!reports.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无举报</p>';return;}
+  c.innerHTML = reports.map(r=>`
+    <div id="report-${r._id}" class="bg-white rounded-xl border ${r.status==='pending'?'border-orange-200':'border-gray-100'} p-4 transition-all">
+      <div class="flex items-center gap-1.5 mb-2"><span class="material-symbols-outlined text-orange-500 text-base">flag</span><span class="font-bold text-xs">${esc(r.reason)}</span>${badge(r.status)}<span class="text-[9px] text-gray-400 ml-auto">${fmt(r.createTime)}</span></div>
+      <div class="bg-gray-50 rounded-lg p-2.5 mb-3">
+        <div class="text-[10px] text-gray-400 mb-0.5">${r._tn?`来自 ${esc(r._tn)}`:''} · ${esc(r._typeLabel || reportTypeLabel(r.targetType))}</div>
+        <p class="text-xs text-gray-700 line-clamp-3">${esc(r._tc||'')}</p>
+      </div>
+      ${r.status==='pending'?`<div class="flex gap-2">
+        <button onclick="doReport('${r._id}','resolved','${r.targetId}','${r.targetType}')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-red-50 text-red-600 active:scale-95">违规删除</button>
+        <button onclick="doReport('${r._id}','dismissed')" class="card-action flex-1 text-[11px] font-bold rounded-xl bg-gray-50 text-gray-600 active:scale-95">驳回</button>
+      </div>`:''}
+    </div>`).join('');
+}
+
+async function doReport(rid, result, tid, ttype) {
+  try {
+    const runReportDb = async () => {
+      await db.collection('reports').doc(rid).update({ status: result, handleTime: new Date() });
+      if (result === 'resolved' && tid) {
+        const collection = reportTargetCollection(ttype);
+        if (collection) {
+          let targetDoc = null;
+          try {
+            const tr = await db.collection(collection).doc(tid).get();
+            targetDoc = (tr && (tr.data && tr.data[0] ? tr.data[0] : tr.data)) || null;
+          } catch (e) {}
+          const wasActive = !!(targetDoc && targetDoc.status === 'active');
+          const deleteData = collection === 'market_goods' ? { status: 'deleted', deleteTime: new Date() } : { status: 'deleted' };
+          if (!targetDoc || targetDoc.status !== 'deleted') {
+            await db.collection(collection).doc(tid).update(deleteData);
+          }
+          if (wasActive && collection === 'comments' && targetDoc && targetDoc.postId) {
+            try { await db.collection('posts').doc(targetDoc.postId).update({ comments: _.inc(-1) }); } catch (e) {}
+          }
+          if (wasActive && collection === 'market_comments' && targetDoc && targetDoc.goodsId) {
+            try { await db.collection('market_goods').doc(targetDoc.goodsId).update({ commentCount: _.inc(-1) }); } catch (e) {}
+          }
+        }
+      }
+    };
+    await adminWriteWithDbFallback(
+      async () => { assertCloudOk(await adminCall('handleReport', { reportId: rid, result }), '处理失败'); },
+      runReportDb
+    );
+    toast(result === 'resolved' ? '已处理，内容已删除' : '已驳回'); loadReports(); loadDashboard();
+  } catch(e) { toast('处理失败','error'); }
+}
+
+// ============ 评论管理 ============
+async function loadCommentsFromDb(typeFilter, statusFilter) {
+  const cond = {};
+  if (statusFilter) cond.status = statusFilter;
+  if (typeFilter === 'post') {
+    const postRes = await db.collection('comments').where(cond).orderBy('createTime', 'desc').limit(80).get();
+    return (postRes.data || []).map(item => ({ ...item, _commentType: 'post' }));
+  }
+  if (typeFilter === 'market') {
+    const marketRes = await db.collection('market_comments').where(cond).orderBy('createTime', 'desc').limit(80).get().catch(() => ({ data: [] }));
+    return (marketRes.data || []).map(item => ({ ...item, _commentType: 'market' }));
+  }
+  const [postRes, marketRes] = await Promise.all([
+    db.collection('comments').where(cond).orderBy('createTime', 'desc').limit(60).get(),
+    db.collection('market_comments').where(cond).orderBy('createTime', 'desc').limit(60).get().catch(() => ({ data: [] }))
+  ]);
+  let list = [
+    ...(postRes.data || []).map(item => ({ ...item, _commentType: 'post' })),
+    ...((marketRes.data || []).map(item => ({ ...item, _commentType: 'market' })))
+  ];
+  list.sort((a, b) => new Date(b.createTime || 0).getTime() - new Date(a.createTime || 0).getTime());
+  return list.slice(0, 100);
+}
+
+async function loadComments() {
+  const c=document.getElementById('comments-container'); c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const typeFilter = (document.getElementById('comment-type-filter')?.value || 'all').trim();
+    const statusFilter = document.getElementById('comment-status-filter')?.value;
+    const raw = await adminReadWithDbFallback('getCommentsAdmin', {
+      type: typeFilter,
+      ...(statusFilter ? { status: statusFilter } : {}),
+      limit: 100
+    }, async () => loadCommentsFromDb(typeFilter, statusFilter));
+    const list = raw.data || [];
+    await translateMediaLinks(list);
+    commentsCache=list; renderComments(commentsCache);
+  } catch(e) { c.innerHTML=`<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`; }
+}
+
+function renderComments(comments) {
+  const c=document.getElementById('comments-container');
+  if(!comments.length){c.innerHTML='<p class="text-center text-gray-400 py-8 text-sm">暂无评论</p>';return;}
+  c.innerHTML = comments.map(cc=>`
+    <div id="comment-${cc._id}" class="bg-white rounded-xl border border-gray-100 p-3.5 flex items-center gap-2.5 transition-all">
+      <div class="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex-shrink-0"><img src="${attrUrl(cc.avatar)}" class="w-full h-full object-cover" onerror="this.style.display='none'"/></div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-0.5">
+          <span class="font-bold text-[11px]">${esc(cc.nickname||'未知')}</span>
+          <span class="text-[9px] text-gray-300">${fmt(cc.createTime)}</span>
+          <span class="px-1.5 py-0.5 rounded-md text-[9px] ${cc._commentType==='market' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'}">${cc._commentType==='market' ? '商品评论' : '帖子评论'}</span>
+          ${badge(cc.status || 'active')}
+        </div>
+        <p class="text-xs text-gray-700 truncate">${esc(cc.content)}</p>
+      </div>
+      ${cc.status==='deleted'
+        ? `<span class="text-[10px] text-gray-400 px-2 py-1">已删除</span>`
+        : `<button onclick="doDelComment('${cc._id}','${cc.postId || cc.goodsId || ''}','${cc._commentType || 'post'}')" class="p-2 rounded-xl bg-red-50 text-red-500 active:scale-90 flex-shrink-0"><span class="material-symbols-outlined text-base">delete</span></button>`
+      }
+    </div>`).join('');
+}
+
+async function doDelComment(cid, parentId, commentType='post') {
+  try {
+    const scope = commentType === 'market' ? 'market' : 'post';
+    const runDb = async () => {
+      if (commentType === 'market') {
+        let current = null;
+        try {
+          const res = await db.collection('market_comments').doc(cid).get();
+          current = (res && (res.data && res.data[0] ? res.data[0] : res.data)) || null;
+        } catch (e) {}
+        await db.collection('market_comments').doc(cid).update({ status: 'deleted' });
+        const goodsId = parentId || (current && current.goodsId) || '';
+        if (goodsId && current && current.status === 'active') {
+          try { await db.collection('market_goods').doc(goodsId).update({ commentCount: _.inc(-1) }); } catch (e) {}
+        }
+      } else {
+        let current = null;
+        try {
+          const res = await db.collection('comments').doc(cid).get();
+          current = (res && (res.data && res.data[0] ? res.data[0] : res.data)) || null;
+        } catch (e) {}
+        await db.collection('comments').doc(cid).update({ status: 'deleted' });
+        const postId = parentId || (current && current.postId) || '';
+        if (postId && current && current.status === 'active') {
+          try { await db.collection('posts').doc(postId).update({ comments: _.inc(-1) }); } catch (e) {}
+        }
+      }
+    };
+    await adminWriteWithDbFallback(
+      async () => {
+        assertCloudOk(await adminCall('deleteCommentAdmin', { commentId: cid, scope }), '删除失败');
+      },
+      runDb
+    );
+    toast('评论已删除'); animRm(cid, 'comment');
+  } catch(e) { toast('删除失败','error'); }
+}
+
+// ============ 公告管理 ============
+async function loadAnnouncements() {
+  const c = document.getElementById('announcements-container');
+  if (!c) return;
+  c.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const raw = assertCloudOk(await adminCall('getAdminAnnouncementList', { page: 1, pageSize: 40 }), '加载失败');
+    const list = raw.data || [];
+    if (!list.length) { c.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">暂无公告</p>'; return; }
+    const allIds = [];
+    list.forEach(a => { if (Array.isArray(a.images)) a.images.forEach(id => allIds.push(id)); });
+    const urlMap = allIds.length ? await resolveCloudFileUrlsBatch(allIds) : {};
+    c.innerHTML = list.map(a => {
+      const st = a.status || 'draft';
+      const campuses = Array.isArray(a.campusIds) ? (a.campusIds.includes('all') ? '全部校区' : a.campusIds.map(campusName).join('、')) : '';
+      const imgs = Array.isArray(a.images) ? a.images.filter(Boolean) : [];
+      const imgHtml = imgs.length ? `<div class="flex flex-wrap gap-2 mt-2">${imgs.map(id => {
+        const u = urlMap[id] || id;
+        return `<img src="${attrUrl(u)}" class="w-16 h-16 rounded-lg object-cover border border-slate-100 cursor-pointer" onclick="openMediaUrl('${encodeURIComponent(id)}')" alt=""/>`;
+      }).join('')}</div>` : '';
+      return `<div class="list-card bg-white rounded-xl border border-border/60 p-4 shadow-card w-full">
+        <div class="flex justify-between gap-2 mb-2 flex-wrap">
+          <div class="font-bold text-sm min-w-0 flex-1">${esc(a.title)}</div>
+          ${badge(st === 'published' ? 'active' : st === 'revoked' ? 'deleted' : 'pending')}
+        </div>
+        <p class="text-xs text-gray-600 ann-item-content mb-2">${esc(a.content)}</p>
+        ${imgHtml}
+        <div class="text-[10px] text-gray-400 flex flex-wrap gap-2 mt-2">${esc(campuses)} · ${fmt(a.createTime)}</div>
+        ${st === 'published' ? `<button type="button" onclick="revokeAnn('${a._id}')" class="mt-3 text-xs font-bold text-error cursor-pointer">撤回</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) { c.innerHTML = `<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`; }
+}
+
+async function submitAnnouncement() {
+  const title = (document.getElementById('ann-title') || {}).value || '';
+  const content = (document.getElementById('ann-content') || {}).value || '';
+  if (!title.trim() || !content.trim()) { toast('请填写标题和内容', 'error'); return; }
+  const ids = annCampusSel.has('all') ? ['all'] : Array.from(annCampusSel);
+  if (!ids.length) { toast('请选择投放校区', 'error'); return; }
+  try {
+    const created = assertCloudOk(await adminCall('createAnnouncement', {
+      title: title.trim(), content: content.trim(), campusIds: ids,
+      images: annImages.map(x => x.fileID).filter(Boolean),
+      priority: (document.getElementById('ann-priority') || {}).value || 'normal',
+      pinTop: !!(document.getElementById('ann-pin') && document.getElementById('ann-pin').checked)
+    }), '创建失败');
+    const aid = created.data && created.data._id;
+    if (!aid) { toast('创建失败', 'error'); return; }
+    const notify = !!(document.getElementById('ann-notify') && document.getElementById('ann-notify').checked);
+    assertCloudOk(await adminCall('publishAnnouncement', { announcementId: aid, sendNotify: notify }), '发布失败');
+    toast('公告已发布');
+    document.getElementById('ann-title').value = '';
+    document.getElementById('ann-content').value = '';
+    annCampusSel.clear();
+    annImages = [];
+    renderAnnImagesPreview();
+    renderCampusChips('ann-campus-chips', annCampusSel, 'toggleAnnCampus');
+    loadAnnouncements();
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+}
+
+async function revokeAnn(id) {
+  try {
+    assertCloudOk(await adminCall('revokeAnnouncement', { announcementId: id }), '撤回失败');
+    toast('已撤回'); loadAnnouncements();
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+}
+
+// ============ 活动专区 ============
+function renderActivitySlidesEditor() {
+  const box = document.getElementById('act-slides-editor');
+  if (!box) return;
+  box.innerHTML = actSlides.map((s, i) => {
+    const preview = s.previewUrl || (s.image && s.image.startsWith('http') ? s.image : '');
+    const previewInner = s.uploading
+      ? '<p class="text-xs text-slate-400 p-4 text-center">上传中…</p>'
+      : (preview ? `<img src="${attrUrl(preview)}" alt=""/>` : '<p class="text-xs text-slate-400 p-4 text-center">点击上传<br/>16:9 横图</p>');
+    return `
+    <div class="slide-card border border-border rounded-xl p-3 bg-slate-50/80" data-slide-index="${i}">
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-600">轮播 #${i + 1}</span>
+          <button type="button" onclick="removeActivitySlide(${i})" class="text-xs text-error font-semibold cursor-pointer">删除</button>
+        </div>
+        <div class="slide-preview cursor-pointer" onclick="pickActSlideImage(${i})">${previewInner}</div>
+        <button type="button" onclick="pickActSlideImage(${i})" class="text-[11px] font-bold text-primary cursor-pointer flex items-center justify-center gap-1 py-1">
+          <span class="material-symbols-outlined text-sm">upload</span>${s.image ? '更换图片' : '上传图片'}
+        </button>
+      </div>
+      <div class="space-y-2 min-w-0">
+        <input data-slide-field="title" data-index="${i}" class="filter-input w-full text-sm px-2.5 py-2 border rounded-lg box-border" placeholder="标题" value="${esc(s.title||'')}"/>
+        <input data-slide-field="subtitle" data-index="${i}" class="filter-input w-full text-sm px-2.5 py-2 border rounded-lg box-border" placeholder="副标题" value="${esc(s.subtitle||'')}"/>
+        <textarea data-slide-field="content" data-index="${i}" class="filter-input w-full text-xs px-2.5 py-2 border rounded-lg box-border resize-y min-h-[56px]" placeholder="活动详情（可选）">${String(s.content||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-slide-field]').forEach(el => {
+    el.addEventListener('input', (e) => {
+      const t = e.target;
+      const idx = Number(t.dataset.index);
+      const field = t.dataset.slideField;
+      if (Number.isNaN(idx) || !field || !actSlides[idx]) return;
+      actSlides[idx][field] = t.value;
+    });
+  });
+}
+
+function addActivitySlide() {
+  actSlides.push({ image: '', title: '', subtitle: '', content: '', activityTime: '', participation: '', rewards: '', ctaText: '了解详情', previewUrl: '', uploading: false });
+  renderActivitySlidesEditor();
+}
+function removeActivitySlide(i) { actSlides.splice(i, 1); renderActivitySlidesEditor(); }
+
+async function loadActivityZone() {
+  try {
+    const raw = assertCloudOk(await adminCall('getActivityZoneAdmin', {}), '加载失败');
+    const d = raw.data || {};
+    document.getElementById('act-enabled').checked = !!d.enabled;
+    actCampusSel = new Set(Array.isArray(d.campusIds) ? d.campusIds : []);
+    actSlides = Array.isArray(d.slides) && d.slides.length ? d.slides.map(s => ({ ...s, previewUrl: '', uploading: false })) : [{ image: '', title: '', subtitle: '', content: '', activityTime: '', participation: '', rewards: '', ctaText: '了解详情', previewUrl: '', uploading: false }];
+    const ids = actSlides.map(s => s.image).filter(id => typeof id === 'string' && id.startsWith('cloud://'));
+    if (ids.length) {
+      const map = await resolveCloudFileUrlsBatch(ids);
+      actSlides.forEach(s => { if (s.image && map[s.image]) s.previewUrl = map[s.image]; });
+    }
+    renderCampusChips('act-campus-chips', actCampusSel, 'toggleActCampus');
+    renderActivitySlidesEditor();
+    const statusEl = document.getElementById('act-status-line');
+    const endBtn = document.getElementById('act-end-btn');
+    const endInput = document.getElementById('act-end-at');
+    if (statusEl) {
+      if (d.activityRunning) {
+        statusEl.textContent = `本期进行中 · 参与帖 ${d.activePostCount || 0} 篇`;
+        statusEl.classList.remove('hidden');
+      } else if (d.lastEndedAt) {
+        statusEl.textContent = `上一期已结束`;
+        statusEl.classList.remove('hidden');
+        statusEl.classList.add('text-slate-500');
+      } else {
+        statusEl.classList.add('hidden');
+      }
+    }
+    if (endBtn) endBtn.classList.toggle('hidden', !d.activityRunning);
+    if (endInput) {
+      if (d.endAt) {
+        const dt = new Date(d.endAt);
+        if (!Number.isNaN(dt.getTime())) {
+          const pad = (n) => String(n).padStart(2, '0');
+          endInput.value = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+        }
+      } else endInput.value = '';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function actEndAtIso() {
+  const v = document.getElementById('act-end-at')?.value;
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+async function saveActivityZone() {
+  const ids = actCampusSel.has('all') ? ['all'] : Array.from(actCampusSel);
+  try {
+    const res = assertCloudOk(await adminCall('saveActivityZone', {
+      enabled: document.getElementById('act-enabled').checked,
+      campusIds: ids.length ? ids : ['all'],
+      slides: actSlides,
+      endAt: actEndAtIso()
+    }), '保存失败');
+    toast(res.msg || '活动专区已保存');
+    await loadActivityZone();
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+}
+
+async function endActivityZone() {
+  if (!confirm('结束本期将把活动帖转为普通帖并清空横幅，确定继续？')) return;
+  try {
+    const res = assertCloudOk(await adminCall('endActivityZone', {}), '操作失败');
+    toast(res.msg || '已结束本期活动');
+    await loadActivityZone();
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+}
+
+// ============ 员工推广 ============
+function findReferralEmployee(empId) {
+  return referralEmployeesCache.find((e) => e.empId === empId) || null;
+}
+
+async function showReferralQrSheet(fileIdOrUrl, title) {
+  if (!fileIdOrUrl) {
+    toast('暂无太阳码，请先点击「生成码」', 'error');
+    return;
+  }
+  const map = await resolveCloudFileUrlsBatch([fileIdOrUrl]);
+  const u = map[fileIdOrUrl] || fileIdOrUrl;
+  openSheet(`<p class="text-sm font-bold mb-2">${esc(title || '员工太阳码')}</p>
+    <img src="${attrUrl(u)}" class="w-full max-w-xs mx-auto rounded-xl border" alt="qrcode"/>
+    <p class="text-[10px] text-gray-400 text-center mt-2">长按或右键保存图片</p>`);
+}
+
+async function loadReferral() {
+  const c = document.getElementById('referral-container');
+  if (!c) return;
+  c.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">加载中...</p>';
+  try {
+    const raw = assertCloudOk(await adminCall('getEmployeeReferralStats', {}), '加载失败');
+    const list = raw.data || [];
+    referralEmployeesCache = list;
+    if (!list.length) { c.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">暂无员工，点击右上角添加</p>'; return; }
+    c.innerHTML = list.map(e => {
+      const hasQr = !!(e.qrcodeUrl && String(e.qrcodeUrl).trim());
+      return `
+      <div class="bg-white rounded-xl border border-border/60 p-4 flex flex-wrap gap-3 items-center shadow-card">
+        <div class="flex-1 min-w-[140px]">
+          <div class="font-bold text-sm">${esc(e.name)} <span class="text-[10px] text-gray-400 font-mono">${esc(e.empId)}</span></div>
+          <div class="text-[10px] text-gray-500 mt-1">邀请码 ${esc(e.inviteCode||'-')} · 邀请 ${e.inviteCount||0} · 扫码 ${e.referralScanCount||0}${hasQr ? ' · 已生成码' : ''}</div>
+        </div>
+        ${badge(e.status === 'disabled' ? 'banned' : 'active')}
+        <button type="button" onclick="openReferralForm(false,${JSON.stringify(e.empId)})" class="text-xs font-bold text-primary cursor-pointer">编辑</button>
+        ${hasQr ? `<button type="button" onclick="viewReferralQr(${JSON.stringify(e.empId)})" class="text-xs font-bold text-gray-600 cursor-pointer">查看码</button>` : ''}
+        <button type="button" onclick="genReferralQr(${JSON.stringify(e.empId)})" class="text-xs font-bold text-accent cursor-pointer">${hasQr ? '重新生成' : '生成码'}</button>
+      </div>`;
+    }).join('');
+  } catch (e) { c.innerHTML = `<p class="text-center text-red-500 py-8 text-sm">${esc(formatPanelError(e))}</p>`; }
+}
+
+function openReferralForm(isNew, empId) {
+  const row = !isNew && empId ? findReferralEmployee(empId) : null;
+  if (!isNew && empId && !row) {
+    toast('未找到该员工，请刷新列表后重试', 'error');
+    return;
+  }
+  const statusEnabled = !row || row.status !== 'disabled';
+  openSheet(`<h3 class="font-bold mb-3">${isNew ? '添加员工' : '编辑员工'}</h3>
+    <div class="space-y-3">
+      <input id="ref-empId" class="filter-input w-full border rounded-lg px-3 py-2 text-sm" placeholder="员工编号（字母数字_-，最长32）" ${isNew ? '' : 'readonly'} value="${esc((row && row.empId) || empId || '')}"/>
+      <input id="ref-name" class="filter-input w-full border rounded-lg px-3 py-2 text-sm" placeholder="姓名" value="${esc((row && row.name) || '')}"/>
+      <input id="ref-code" class="filter-input w-full border rounded-lg px-3 py-2 text-sm" placeholder="邀请码（展示用，可选）" value="${esc((row && row.inviteCode) || '')}"/>
+      <select id="ref-status" class="filter-select w-full border rounded-lg px-3 py-2 text-sm cursor-pointer">
+        <option value="enabled"${statusEnabled ? ' selected' : ''}>启用</option>
+        <option value="disabled"${!statusEnabled ? ' selected' : ''}>停用</option>
+      </select>
+      <button type="button" onclick="saveReferralEmployee(${!!isNew})" class="w-full py-2.5 bg-primary text-white rounded-lg font-semibold cursor-pointer">保存</button>
+    </div>`);
+}
+
+async function saveReferralEmployee(isNew) {
+  const empId = document.getElementById('ref-empId').value.trim();
+  const name = document.getElementById('ref-name').value.trim();
+  const inviteCode = document.getElementById('ref-code').value.trim();
+  const status = document.getElementById('ref-status').value;
+  if (!empId) { toast('请填写员工编号', 'error'); return; }
+  if (!name) { toast('请填写姓名', 'error'); return; }
+  try {
+    assertCloudOk(await adminCall('saveEmployee', { isNew, empId, name, inviteCode, status }), '保存失败');
+    closeSheet(); toast('已保存'); loadReferral();
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+}
+
+async function viewReferralQr(empId) {
+  const row = findReferralEmployee(empId);
+  if (!row || !row.qrcodeUrl) {
+    toast('暂无太阳码', 'error');
+    return;
+  }
+  try {
+    await showReferralQrSheet(row.qrcodeUrl, `${row.name || empId} · 太阳码`);
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+}
+
+async function genReferralQr(empId) {
+  if (!empId) return;
+  if (referralQrGenerating === empId) return;
+  referralQrGenerating = empId;
+  try {
+    toast('正在生成太阳码…');
+    const raw = assertCloudOk(await adminCall('generateEmployeeQrcode', { empId }), '生成失败');
+    const url = raw.data && (raw.data.qrcodeUrl || raw.data.fileID);
+    if (url) {
+      const row = findReferralEmployee(empId);
+      if (row) row.qrcodeUrl = url;
+      await showReferralQrSheet(url, `${(row && row.name) || empId} · 太阳码已生成`);
+    } else toast(raw.msg || '生成成功', 'success');
+    loadReferral();
+  } catch (e) { toast(formatPanelError(e), 'error'); }
+  finally { referralQrGenerating = ''; }
+}
+
+// ============ 操作日志面板 ============
+function renderAuditLog() {
+  const c = document.getElementById('auditlog-container');
+  if (!c) return;
+  if (!auditLogs.length) { c.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">暂无操作日志</p>'; return; }
+  c.innerHTML = auditLogs.slice(0, 100).map(l => `
+    <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary text-lg">event_note</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-bold">${esc(l.action)}</div>
+        <div class="text-[10px] text-gray-400">${esc(l.target || '')} ${esc(l.detail || '')}</div>
+      </div>
+      <span class="text-[9px] text-gray-300 font-mono flex-shrink-0">${fmt(l.time)}</span>
+    </div>`).join('');
+}
+function clearAuditLogs() {
+  confirmAction('清空操作日志', '所有日志将被删除，不可恢复', () => {
+    auditLogs = [];
+    try { localStorage.removeItem('admin_audit_logs'); } catch(e){}
+    renderAuditLog();
+    toast('日志已清空');
+  });
+}
+function loadSettingsPanel() {
+  const ss = document.getElementById('secret-status');
+  if (ss) ss.textContent = hasAdminSecret() ? '已配置 ✓' : '未配置 ✗';
+  const ns = document.getElementById('notify-status');
+  if (ns) ns.textContent = notifyPermission === 'granted' ? '通知已开启 ✓' : (notifyPermission === 'denied' ? '权限被拒绝' : '未授权');
+}
+
+// ============ 启动 ============
+document.addEventListener('DOMContentLoaded', initAdmin);
+</script>
+</body>
+</html>
+

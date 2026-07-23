@@ -35,9 +35,52 @@ exports.main = async (event, context) => {
         }
       }
 
-      // 用户已存在，检查账号状态
+      // 用户已注销：允许重新注册（同一 openid 重新激活为全新可用状态）
       if (user.status === 'deleted') {
-        return { code: -3, msg: '该账号已注销，无法继续使用', user: null }
+        const reactivatedUser = {
+          ...user,
+          status: 'active',
+          deleteTime: null,
+          role: user.role || 'user',
+          numericId: user.numericId || getNumericId(OPENID),
+          nickName: '树洞用户' + Math.floor(Math.random() * 9000 + 1000),
+          avatarUrl: '/images/avatar_default.png',
+          college: '未设置',
+          bio: '',
+          tags: [],
+          coverImage: '',
+          postCount: 0,
+          likeCount: 0,
+          agreedPrivacy: false,
+          profileCompleted: false
+        }
+        await db.collection('users').doc(user._id).update({
+          data: {
+            status: reactivatedUser.status,
+            deleteTime: reactivatedUser.deleteTime,
+            role: reactivatedUser.role,
+            numericId: reactivatedUser.numericId,
+            nickName: reactivatedUser.nickName,
+            avatarUrl: reactivatedUser.avatarUrl,
+            college: reactivatedUser.college,
+            bio: reactivatedUser.bio,
+            tags: reactivatedUser.tags,
+            coverImage: reactivatedUser.coverImage,
+            postCount: reactivatedUser.postCount,
+            likeCount: reactivatedUser.likeCount,
+            agreedPrivacy: reactivatedUser.agreedPrivacy,
+            profileCompleted: reactivatedUser.profileCompleted,
+            lastLoginTime: db.serverDate()
+          }
+        })
+        return {
+          code: 0,
+          msg: '欢迎回来，账号已重新激活',
+          user: reactivatedUser,
+          openid: OPENID,
+          isNew: true,
+          reactivated: true
+        }
       }
       if (user.status === 'banned') {
         return { code: -2, msg: '账号已被封禁', user: null }

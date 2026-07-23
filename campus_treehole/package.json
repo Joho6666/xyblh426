@@ -6,6 +6,17 @@
     "cloud:push-fn-env": "node -e \"const{spawn}=require('child_process');function run(n,c){return new Promise((res,rej)=>{const p=spawn('npx',['-p','@cloudbase/cli@latest','tcb','config','update','fn',n],{stdio:['pipe','inherit','inherit'],shell:true,cwd:__dirname});p.stdin.write('\\r\\n');p.on('close',c=>c===0?res():rej(new Error('exit '+c)));});} (async()=>{await run('adminPanel');await run('dbOperations');})();\"",
     "cloud:login-list": "npx -p @cloudbase/cli@latest tcb env login list -e xyblh-5gb26qrnf9d30feb",
     "cloud:login-add-anonymous": "npx -p @cloudbase/cli@latest tcb env login create -e xyblh-5gb26qrnf9d30feb",
-    "cloud:login-update": "npx -p @cloudbase/cli@latest tcb env login update -e xyblh-5gb26qrnf9d30feb"
+    "cloud:login-update": "npx -p @cloudbase/cli@latest tcb env login update -e xyblh-5gb26qrnf9d30feb",
+    "db:create-user-blocks-collection": "node scripts/create-user-blocks-collection.js",
+    "db:provision-user-blocks": "node scripts/provision-user-blocks.js",
+    "db:index-user-blocks": "node scripts/run-user-blocks-nosql.js",
+    "cloud:deploy-dbOperations": "npx -p @cloudbase/cli@latest tcb fn deploy dbOperations -e xyblh-5gb26qrnf9d30feb --force",
+    "cloud:deploy-functions": "npx -p @cloudbase/cli@latest tcb fn deploy --all --force -e xyblh-5gb26qrnf9d30feb",
+    "cloud:deploy-bugfix": "npx -p @cloudbase/cli@latest tcb fn deploy dbOperations adminPanel notifySender userReferral bindInviteEmployee -e xyblh-5gb26qrnf9d30feb --force",
+    "admin:sync": "node -e \"const fs=require('fs');const path=require('path');const src=path.join(process.env.USERPROFILE||'','Desktop','admin后台');const dst=path.join(__dirname,'hosting','admin.html');if(!fs.existsSync(src))throw new Error('找不到 '+src);fs.copyFileSync(src,dst);console.log('已同步到 hosting/admin.html');\"",
+    "admin:deploy": "npm run admin:sync && npx -p @cloudbase/cli@latest tcb hosting deploy hosting/admin.html admin.html -e xyblh-5gb26qrnf9d30feb"
+  },
+  "devDependencies": {
+    "@cloudbase/cli": "^3.4.0-beta.0"
   }
 }

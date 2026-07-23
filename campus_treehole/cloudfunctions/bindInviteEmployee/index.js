@@ -2,6 +2,7 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+const _ = db.command
 
 exports.main = async (event) => {
   const { OPENID } = cloud.getWXContext()
@@ -59,21 +60,39 @@ exports.main = async (event) => {
     if (!hadInvite) {
       boundEmpId = employee.empId
       boundInviteCode = employee.inviteCode || ''
-      await db.collection('users').doc(user._id).update({
-        data: {
-          inviteEmpId: employee.empId,
+      // 条件更新：只在 inviteEmpId 仍为空时写入，并发场景下只有一次成功
+      const updRes = await db.collection('users')
+        .where({
+          _id: user._id,
+          inviteEmpId: _.or([_.exists(false), _.eq(''), _.eq(null)])
+        })
+        .update({
+          data: {
+            inviteEmpId: employee.empId,
+            inviteCode: boundInviteCode,
+            firstScene: scene,
+            inviteBindTime: now
+          }
+        })
+      const isFirst = !!(updRes && updRes.stats && updRes.stats.updated > 0)
+      await db.collection('referrals').add({ data: { ...baseReferral, isFirstBind: isFirst } })
+      if (isFirst) {
+        return ok({
+          message: '绑定成功',
+          empId: employee.empId,
           inviteCode: boundInviteCode,
           firstScene: scene,
-          inviteBindTime: now
-        }
-      })
-      await db.collection('referrals').add({ data: { ...baseReferral, isFirstBind: true } })
+          isFirstBind: true
+        })
+      }
+      // 并发兜底：另一并发请求已绑定，回查实际值
+      const fresh = await db.collection('users').doc(user._id).get().catch(() => ({ data: null }))
+      const freshUser = (fresh && fresh.data) || {}
       return ok({
-        message: '绑定成功',
-        empId: employee.empId,
-        inviteCode: boundInviteCode,
-        firstScene: scene,
-        isFirstBind: true
+        message: '已记录扫码（推广来源以首次绑定为准，未修改）',
+        empId: freshUser.inviteEmpId || boundEmpId,
+        inviteCode: freshUser.inviteCode || boundInviteCode,
+        isFirstBind: false
       })
     }
 

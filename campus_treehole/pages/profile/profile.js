@@ -20,7 +20,10 @@ Page({
     goodsStatTotal: 0,
     followingCount: 0,
     followerCount: 0,
-    isAdmin: false
+    isAdmin: false,
+    profileAccessDenied: false,
+    denyMessage: '',
+    iBlockedThem: false
   },
 
   async onLoad(options) {
@@ -39,7 +42,13 @@ Page({
       const isMe = resolvedTargetOpenid === app.globalData.openid
       const isAdmin =
         app.globalData.userInfo && app.globalData.userInfo.role === 'admin'
-      this.setData({ isMe, isAdmin })
+      this.setData({
+        isMe,
+        isAdmin,
+        profileAccessDenied: false,
+        denyMessage: '',
+        iBlockedThem: false
+      })
       await this.loadUserData(resolvedTargetOpenid, { reset: true })
     }
 
@@ -60,12 +69,35 @@ Page({
 
   async loadUserData(targetOpenid, { reset = true } = {}) {
     try {
-      const rawUser = await app.getUserInfo(targetOpenid)
+      let rawUser = null
+      try {
+        const result = await app.callDB('getUserInfo', { targetOpenid })
+        rawUser = result.data
+      } catch (err) {
+        const msg = (err && err.msg) || '无法查看该用户'
+        this.setData({
+          profileAccessDenied: true,
+          denyMessage: msg,
+          posts: [],
+          goods: [],
+          postsHasMore: false,
+          goodsHasMore: false,
+          postStatTotal: 0,
+          goodsStatTotal: 0,
+          user: {},
+          iBlockedThem: false,
+          isFollowing: false
+        })
+        wx.setNavigationBarTitle({ title: '用户主页' })
+        return
+      }
+
       if (!rawUser) {
         wx.showToast({ title: '用户不存在', icon: 'none' })
         return
       }
 
+      const iBlockedThem = !!rawUser.iBlockedThem
       const user = await app.resolveUserMedia(rawUser)
 
       if (reset) {
@@ -105,7 +137,10 @@ Page({
             : formattedPosts.length
 
         this.setData({
+          profileAccessDenied: false,
+          denyMessage: '',
           user,
+          iBlockedThem,
           posts: formattedPosts,
           postsHasMore: safePostsRaw.length >= LIST_PAGE_SIZE,
           postsLoadingMore: false,
@@ -120,7 +155,10 @@ Page({
         })
       } else {
         this.setData({
+          profileAccessDenied: false,
+          denyMessage: '',
           user,
+          iBlockedThem,
           followingCount: user.followingCount || 0,
           followerCount: user.followerCount || 0,
           isFollowing: !!user.isFollowing
@@ -229,6 +267,10 @@ Page({
   },
 
   async onToggleFollow() {
+    if (this.data.iBlockedThem) {
+      wx.showToast({ title: '请先解除拉黑后再关注', icon: 'none' })
+      return
+    }
     const isFollowing = await app.toggleFollow(this.data.targetOpenid)
     if (isFollowing !== null) {
       this.setData({ isFollowing })
@@ -241,9 +283,36 @@ Page({
   },
 
   onSendMessage() {
+    if (this.data.iBlockedThem) {
+      wx.showToast({ title: '请先解除拉黑后再私信', icon: 'none' })
+      return
+    }
     const user = this.data.user
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${this.data.targetOpenid}&nickname=${encodeURIComponent(user.nickName || '')}`
+      url: `/pages/chat/chat?openid=${encodeURIComponent(this.data.targetOpenid)}&nickname=${encodeURIComponent(user.nickName || '')}`
+    })
+  },
+
+  async onToggleUserBlock() {
+    const nick = (this.data.user && this.data.user.nickName) || '该用户'
+    const currentlyBlocked = this.data.iBlockedThem
+    wx.showModal({
+      title: currentlyBlocked ? '解除拉黑' : '拉黑用户',
+      content: currentlyBlocked
+        ? `解除后双方可正常浏览主页与动态（若对方仍拉黑你，则以对方为准）。关注关系不会自动恢复，需要时可重新点「关注」；也可在「我的 → 黑名单」集中管理。`
+        : `拉黑后对方无法查看你的主页、帖子和闲置，也无法向你发私信；双方信息流中互不展示对方内容。你可随时点「解除拉黑」或在「我的 → 黑名单」恢复。`,
+      confirmText: currentlyBlocked ? '解除' : '确认拉黑',
+      confirmColor: currentlyBlocked ? '#426089' : '#b3261e',
+      success: async (res) => {
+        if (!res.confirm) return
+        const payload = await app.toggleUserBlock(this.data.targetOpenid)
+        if (!payload) return
+        wx.showToast({
+          title: payload.blocked ? '已拉黑' : '已解除拉黑',
+          icon: 'none'
+        })
+        await this.loadUserData(this.data.targetOpenid, { reset: true })
+      }
     })
   },
 
@@ -265,12 +334,14 @@ Page({
 
   goToDetail(e) {
     const id = e.currentTarget.dataset.id
-    wx.navigateTo({ url: `/pages/detail/detail?id=${id}` })
+    if (!id) return
+    wx.navigateTo({ url: `/pages/detail/detail?id=${encodeURIComponent(id)}` })
   },
 
   goToGoodsDetail(e) {
     const id = e.currentTarget.dataset.id
-    wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${id}` })
+    if (!id) return
+    wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
   },
 
   onAdminBanUser() {

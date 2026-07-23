@@ -1,0 +1,12 @@
+<view class="dsb-bar">
+  <image class="dsb-icon" src="/images/icon_search.png" mode="aspectFit" />
+  <input
+    class="dsb-input"
+    type="text"
+    placeholder="{{placeholder}}"
+    value="{{innerValue}}"
+    bindinput="onInput"
+    bindconfirm="onConfirm"
+  />
+  <view class="dsb-clear" wx:if="{{innerValue}}" catchtap="onClear">清除</view>
+</view>

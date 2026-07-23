@@ -24,6 +24,15 @@ const CLOUD_ENV_ID = 'xyblh-5gb26qrnf9d30feb'
 const campuses = require('./utils/campuses.js')
 const SELECTED_CAMPUS_ID_KEY = 'selectedCampusId_v1'
 const SELECTED_CAMPUS_NAME_KEY = 'selectedCampusName_v1'
+const SUBSCRIBE_TEMPLATE_IDS = {
+  dm: 'urNB_Yql0bvQrr5F1ixTXHE_RJQsiHBngQtzpsybqkk',
+  comment: 'jCvXTmzXH-vqli7wgYd5ou33x1xYx3XqpgFif3rIDuU',
+  like: '3GQRsj3QWK1243Olqj51-eNFyFCy-MRxQb647S4qvsc',
+  favorite: 'mApnJh3ejdXJAlkHo8dv0D_5jSuvSgN821TcYOgn_Cw',
+  share: 'hD4CErsSj9o32U9PuLimdLdjYgmudDevTYMkeewi7zY',
+  announcement: 'VxJKCaDjfRmyBF7SQs-GWyfQSsZhcaWqaZ404Xr5Bxk',
+  offshelf: 'TI9X4dyUfuoqFujGvs293DPHy64epKHatOUm5c_b7JM'
+}
 
 /** 员工推广扫码 scene 本地缓存 key（与 bindInviteEmployee 配合） */
 const INVITE_SCENE_STORAGE_KEY = 'invite_scene'
@@ -38,6 +47,8 @@ App({
     this._requestCache = new Map()
     this._requestInflight = new Map()
     this._tempUrlCache = new Map()
+    this._tempUrlInflight = new Map()
+    this._campusCache = { id: undefined, name: undefined }
 
     if (wx.cloud) {
       const envId = String(CLOUD_ENV_ID || '').trim() || 'xyblh-5gb26qrnf9d30feb'
@@ -198,7 +209,8 @@ App({
     // 由发布/编辑等动作置位，Tab 页 onShow 检测后拉取最新数据
     indexFeedNeedsRefresh: false,
     marketNeedsRefresh: false,
-    mineNeedsRefresh: false
+    mineNeedsRefresh: false,
+    notifyTemplateIds: { ...SUBSCRIBE_TEMPLATE_IDS }
   },
 
   // ========== 校区（帖子 / 集市隔离） ==========
@@ -210,10 +222,17 @@ App({
 
   /** 仅已写入 Storage 的校区（用于列表请求） */
   getCommittedCampusId() {
+    // 命中内存缓存就直接返回，避免在列表渲染热路径里反复同步读 storage（旧手机有明显延迟）
+    if (!this._campusCache) this._campusCache = { id: undefined, name: undefined }
+    if (this._campusCache.id !== undefined) return this._campusCache.id
     try {
       const id = wx.getStorageSync(SELECTED_CAMPUS_ID_KEY)
-      if (id && campuses.getCampusById(id)) return id
+      if (id && campuses.getCampusById(id)) {
+        this._campusCache.id = id
+        return id
+      }
     } catch (e) {}
+    this._campusCache.id = null
     return null
   },
 
@@ -227,13 +246,22 @@ App({
   },
 
   getSelectedCampusName() {
+    if (!this._campusCache) this._campusCache = { id: undefined, name: undefined }
+    if (this._campusCache.name !== undefined && this._campusCache.name !== null) {
+      return this._campusCache.name
+    }
     try {
       const name = wx.getStorageSync(SELECTED_CAMPUS_NAME_KEY)
-      if (name) return name
+      if (name) {
+        this._campusCache.name = name
+        return name
+      }
     } catch (e) {}
     const id = this.getSelectedCampusId()
     const c = campuses.getCampusById(id)
-    return (c && c.name) || '桂林航天工业学院'
+    const fallback = (c && c.name) || '桂林航天工业学院'
+    this._campusCache.name = fallback
+    return fallback
   },
 
   /**
@@ -253,6 +281,9 @@ App({
     } catch (e) {
       console.warn('[campus] storage', e)
     }
+    if (!this._campusCache) this._campusCache = { id: undefined, name: undefined }
+    this._campusCache.id = c.id
+    this._campusCache.name = c.name
     if (this.globalData.userInfo) {
       this.globalData.userInfo.campusId = c.id
       this.globalData.userInfo.campusName = c.name
@@ -297,8 +328,9 @@ App({
     this.globalData.loginCallbacks = []
   },
 
-  // 执行登录
-  doLogin() {
+  // 执行登录（options.silent=true 时不弹「网络异常」toast，用于分享落地页）
+  doLogin(options = {}) {
+    const silent = !!(options && options.silent)
     if (this.globalData.loggingIn) {
       return
     }
@@ -356,7 +388,9 @@ App({
       fail: (err) => {
         this.globalData.loggingIn = false
         console.error('[登录] 云函数调用失败:', err)
-        wx.showToast({ title: '网络异常，请检查网络后重试', icon: 'none' })
+        if (!silent) {
+          wx.showToast({ title: '网络异常，请检查网络后重试', icon: 'none' })
+        }
         this.flushLoginWaiters(null)
       }
     })
@@ -488,7 +522,32 @@ App({
       value,
       expireAt: Date.now() + ttlMs
     })
+    this.pruneRuntimeCaches()
     return value
+  },
+
+  pruneRuntimeCaches() {
+    const now = Date.now()
+    if (this._requestCache && this._requestCache.size > 160) {
+      Array.from(this._requestCache.entries()).forEach(([key, item]) => {
+        if (!item || item.expireAt <= now) this._requestCache.delete(key)
+      })
+      while (this._requestCache.size > 120) {
+        const firstKey = this._requestCache.keys().next().value
+        if (!firstKey) break
+        this._requestCache.delete(firstKey)
+      }
+    }
+    if (this._tempUrlCache && this._tempUrlCache.size > 500) {
+      Array.from(this._tempUrlCache.entries()).forEach(([key, item]) => {
+        if (!item || item.expireAt <= now) this._tempUrlCache.delete(key)
+      })
+      while (this._tempUrlCache.size > 360) {
+        const firstKey = this._tempUrlCache.keys().next().value
+        if (!firstKey) break
+        this._tempUrlCache.delete(firstKey)
+      }
+    }
   },
 
   invalidateCacheByPrefix(prefix) {
@@ -498,6 +557,20 @@ App({
         this._requestCache.delete(key)
       }
     })
+  },
+
+  /** 从发帖编辑页返回时强制刷新对应详情（避免仅依赖 onShow 节流导致看不到最新内容） */
+  markDetailNeedsRefresh(postId) {
+    if (!postId) return
+    this._detailRefreshPostIds = this._detailRefreshPostIds || {}
+    this._detailRefreshPostIds[postId] = true
+  },
+
+  consumeDetailNeedsRefresh(postId) {
+    const m = this._detailRefreshPostIds
+    if (!postId || !m || !m[postId]) return false
+    delete m[postId]
+    return true
   },
 
   cachedCall(key, ttlMs, factory) {
@@ -531,7 +604,8 @@ App({
     if (!campusId) {
       return []
     }
-    const payload = { category, keyword, page, feedType, campusId }
+    // 低配机优化：降低单次拉取量，减轻图片解码与列表渲染压力
+    const payload = { category, keyword, page, pageSize: 12, feedType, campusId }
     const oid = this.globalData.openid || ''
     const cacheKey = `getPosts:${stableStringify(payload)}:${oid}`
     return this.cachedCall(cacheKey, page === 1 ? 15000 : 8000, async () => {
@@ -542,15 +616,102 @@ App({
 
   // 获取单个帖子
   async getPostById(postId) {
+    return this.fetchPostForShare(postId)
+  },
+
+  /**
+   * 分享落地读帖：云函数失败时用客户端只读库兜底（posts 集合需 READONLY）
+   */
+  async fetchPostForShare(postId) {
+    const id = String(postId || '').trim()
+    if (!id) return null
+    const oid = this.globalData.openid || ''
+    const cacheKey = `getPostById:${id}:${oid}`
+
+    const fromCloudFn = async () => {
+      const result = await this.callDB('getPostById', { postId: id })
+      return result.data || null
+    }
+
     try {
-      const oid = this.globalData.openid || ''
-      return await this.cachedCall(`getPostById:${postId}:${oid}`, 15000, async () => {
-        const result = await this.callDB('getPostById', { postId })
-        return result.data || null
-      })
+      const cached = await this.cachedCall(cacheKey, 15000, fromCloudFn)
+      if (cached) return cached
     } catch (err) {
-      console.error('获取帖子详情失败:', err)
+      console.warn('[fetchPostForShare] 云函数失败，尝试直连数据库', err && (err.msg || err.message) ? (err.msg || err.message) : err)
+    }
+
+    if (!this.globalData.cloudReady) return null
+    try {
+      const res = await wx.cloud.database().collection('posts').doc(id).get()
+      const post = res && res.data
+      if (!post || !post._id || post.status !== 'active') return null
+      return { ...post, isLiked: false, isFavored: false }
+    } catch (dbErr) {
+      console.warn('[fetchPostForShare] 直连数据库失败', dbErr)
       return null
+    }
+  },
+
+  async fetchCommentsForShare(postId, sortBy = 'hot') {
+    try {
+      const result = await this.callDB('getComments', { postId, sortBy })
+      return result.data || []
+    } catch (err) {
+      if (!this.globalData.cloudReady) return []
+      try {
+        let query = wx.cloud.database().collection('comments').where({ postId, status: 'active' })
+        query = sortBy === 'hot'
+          ? query.orderBy('likes', 'desc')
+          : query.orderBy('createTime', 'desc')
+        const res = await query.limit(100).get()
+        return res.data || []
+      } catch (dbErr) {
+        console.warn('[fetchCommentsForShare] 直连失败', dbErr)
+        return []
+      }
+    }
+  },
+
+  /** 分享落地读商品：云函数失败时用 market_goods 只读库兜底 */
+  async fetchMarketGoodsForShare(goodsId) {
+    const id = String(goodsId || '').trim()
+    if (!id) return { data: null, isFavored: false }
+    try {
+      return await this.callDB('getMarketGoodsById', { goodsId: id })
+    } catch (err) {
+      console.warn('[fetchMarketGoodsForShare] 云函数失败，尝试直连数据库', err && (err.msg || err.message) ? (err.msg || err.message) : err)
+    }
+    if (!this.globalData.cloudReady) return { data: null, isFavored: false }
+    try {
+      const res = await wx.cloud.database().collection('market_goods').doc(id).get()
+      const goods = res && res.data
+      if (!goods || !goods._id || goods.status !== 'active') {
+        return { data: null, isFavored: false }
+      }
+      return { code: 0, data: goods, isFavored: false }
+    } catch (dbErr) {
+      console.warn('[fetchMarketGoodsForShare] 直连数据库失败', dbErr)
+      return { data: null, isFavored: false }
+    }
+  },
+
+  async fetchMarketCommentsForShare(goodsId) {
+    try {
+      const result = await this.callDB('getMarketComments', { goodsId })
+      return result.data || []
+    } catch (err) {
+      if (!this.globalData.cloudReady) return []
+      try {
+        const res = await wx.cloud.database().collection('market_comments')
+          .where({ goodsId, status: 'active' })
+          .orderBy('createTime', 'desc')
+          .limit(100)
+          .get()
+        return res.data || []
+      } catch (dbErr) {
+        console.warn('[fetchMarketCommentsForShare] 直连失败', dbErr)
+        return []
+      }
     }
   },
 
@@ -624,6 +785,9 @@ App({
   async toggleLikePost(postId) {
     try {
       const result = await this.callDB('toggleLikePost', { postId })
+      if (result && result.data && postId) {
+        this.invalidateCacheByPrefix(`getPostById:${postId}`)
+      }
       return result.data || null
     } catch (err) {
       wx.showToast({ title: err.msg || '操作失败', icon: 'none' })
@@ -655,6 +819,9 @@ App({
   async addComment(postId, content, replyTo) {
     try {
       const result = await this.callDB('addComment', { postId, content, replyTo })
+      if (result && result.data && postId) {
+        this.invalidateCacheByPrefix(`getPostById:${postId}`)
+      }
       return result.data
     } catch (err) {
       wx.showToast({ title: err.msg || '评论失败', icon: 'none' })
@@ -693,6 +860,9 @@ App({
     try {
       const result = await this.callDB('toggleFavorPost', { postId })
       const d = result.data
+      if (d && typeof d.isFavored === 'boolean' && postId) {
+        this.invalidateCacheByPrefix(`getPostById:${postId}`)
+      }
       return d && typeof d.isFavored === 'boolean' ? d.isFavored : null
     } catch (err) {
       wx.showToast({ title: err.msg || '操作失败', icon: 'none' })
@@ -748,6 +918,34 @@ App({
     }
   },
 
+  async toggleUserBlock(targetOpenid) {
+    try {
+      const result = await this.callDB('toggleUserBlock', { targetOpenid })
+      return result.data || null
+    } catch (err) {
+      wx.showToast({ title: (err && err.msg) || '操作失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async getBlockRelation(targetOpenid) {
+    try {
+      const result = await this.callDB('getBlockRelation', { targetOpenid })
+      return result.data || { either: false, theyBlockedMe: false, iBlockedThem: false }
+    } catch (err) {
+      return { either: false, theyBlockedMe: false, iBlockedThem: false }
+    }
+  },
+
+  async getBlockedUsersList(page = 1, pageSize = 50) {
+    try {
+      const result = await this.callDB('getBlockedUsersList', { page, pageSize })
+      return result.data || []
+    } catch (err) {
+      return []
+    }
+  },
+
   // ========== 用户操作 ==========
 
   async getUserInfo(targetOpenid) {
@@ -773,9 +971,97 @@ App({
     }
   },
 
+  getNotifyTemplateIds() {
+    const ids = this.globalData.notifyTemplateIds || {}
+    const dedup = []
+    ;['dm', 'comment', 'like', 'favorite', 'share', 'announcement', 'offshelf'].forEach((k) => {
+      const id = String(ids[k] || '').trim()
+      if (id && dedup.indexOf(id) === -1) dedup.push(id)
+    })
+    return dedup
+  },
+
+  getNotifyTemplateIdsForOneTap(batch = 1) {
+    const ids = this.globalData.notifyTemplateIds || {}
+    // 微信订阅消息：一次点击最多申请3个模板。
+    // 第1批：优先点赞/私信/评论（核心互动）；第2批：收藏/转发/下架。
+    const preferredOrderBatch1 = ['like', 'dm', 'comment']
+    const preferredOrderBatch2 = ['favorite', 'share', 'offshelf']
+    const preferredOrder = Number(batch) === 2 ? preferredOrderBatch2 : preferredOrderBatch1
+    const picked = []
+    preferredOrder.forEach((k) => {
+      const id = String(ids[k] || '').trim()
+      if (id && picked.indexOf(id) === -1 && picked.length < 3) picked.push(id)
+    })
+    return picked
+  },
+
+  async enableSubscribeNotificationsFromClient(options = {}) {
+    const batch = Number(options.batch) === 2 ? 2 : 1
+    const tmplIds = this.getNotifyTemplateIdsForOneTap(batch)
+    if (!tmplIds.length) {
+      wx.showToast({ title: '请先配置订阅消息模板ID', icon: 'none' })
+      return { ok: false, msg: '模板ID未配置' }
+    }
+    // 注意：该 API 必须由“用户手势”直接触发，且单次请求最多 3 个模板。
+    // 不可在一次点击中 await 后再连续调用多次，否则后续调用会丢失手势上下文并失败。
+    try {
+      const requestRes = await wx.requestSubscribeMessage({ tmplIds })
+      const accepted = tmplIds.filter((id) => requestRes && requestRes[id] === 'accept')
+      if (!accepted.length) {
+        wx.showToast({ title: '你未开启服务通知', icon: 'none' })
+        return { ok: false, msg: '用户未同意' }
+      }
+      const idMap = this.globalData.notifyTemplateIds || {}
+      const prevUserInfo = this.globalData.userInfo || {}
+      const prevPrefs = prevUserInfo.notifyPrefs || {}
+      const prevAcceptedIds = Array.isArray(prevUserInfo.notifyAcceptedTemplateIds)
+        ? prevUserInfo.notifyAcceptedTemplateIds
+        : []
+      const mergedAccepted = Array.from(new Set([...prevAcceptedIds, ...accepted]))
+      const isAccepted = (sceneKey) => {
+        const id = String(idMap[sceneKey] || '').trim()
+        return !!(id && mergedAccepted.indexOf(id) !== -1)
+      }
+      const mergedPrefs = {
+        dm: prevPrefs.dm !== false,
+        comment: prevPrefs.comment !== false,
+        like: prevPrefs.like !== false,
+        favorite: prevPrefs.favorite !== false,
+        share: prevPrefs.share !== false,
+        announcement: prevPrefs.announcement !== false,
+        offshelf: prevPrefs.offshelf !== false
+      }
+      ;['dm', 'comment', 'like', 'favorite', 'share', 'announcement', 'offshelf'].forEach((k) => {
+        if (isAccepted(k)) mergedPrefs[k] = true
+      })
+      await this.callDB('updateNotifySettings', {
+        notifyEnabled: true,
+        notifyPrefs: mergedPrefs,
+        acceptedTemplateIds: mergedAccepted
+      })
+      if (this.globalData.userInfo) {
+        this.globalData.userInfo.notifyEnabled = true
+        this.globalData.userInfo.notifyPrefs = mergedPrefs
+        this.globalData.userInfo.notifyAcceptedTemplateIds = mergedAccepted
+      }
+      wx.showToast({ title: batch === 2 ? '第二步已开启' : '第一步已开启', icon: 'success' })
+      return { ok: true, batch, acceptedTemplateIds: accepted, mergedAcceptedTemplateIds: mergedAccepted }
+    } catch (err) {
+      const detail = (err && (err.errMsg || err.message)) || ''
+      console.error('[subscribeMessage]', err)
+      wx.showToast({
+        title: '开启失败，请重试',
+        icon: 'none'
+      })
+      return { ok: false, msg: detail || '请求失败' }
+    }
+  },
+
   async searchUsers(keyword) {
     try {
-      const result = await this.callDB('searchUsers', { keyword })
+      const kw = keyword == null ? '' : String(keyword)
+      const result = await this.callDB('searchUsers', { keyword: kw })
       return result.data || []
     } catch (err) {
       return []
@@ -890,6 +1176,170 @@ App({
     })
   },
 
+  async getAnnouncementList(page = 1, pageSize = 20) {
+    try {
+      const result = await this.callDB('getAnnouncementList', { page, pageSize })
+      const list = result.data || []
+      return await this.resolveAnnouncementsMedia(list)
+    } catch (err) {
+      return []
+    }
+  },
+
+  async getAdminAnnouncementList(page = 1, pageSize = 30) {
+    try {
+      const result = await this.callDB('getAdminAnnouncementList', { page, pageSize })
+      const list = result.data || []
+      return await this.resolveAnnouncementsMedia(list)
+    } catch (err) {
+      return []
+    }
+  },
+
+  async getAnnouncementDetail(announcementId) {
+    try {
+      const result = await this.callDB('getAnnouncementDetail', { announcementId })
+      const item = result.data || null
+      if (!item) return null
+      const list = await this.resolveAnnouncementsMedia([item])
+      return list[0] || item
+    } catch (err) {
+      wx.showToast({ title: err.msg || '获取公告失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async getActivityZone() {
+    const campusId = this.getCommittedCampusId()
+    try {
+      const result = await this.callDB('getActivityZone', { campusId: campusId || '' })
+      return result.data || null
+    } catch (err) {
+      return null
+    }
+  },
+
+  async getActivityZoneAdmin() {
+    try {
+      const result = await this.callDB('getActivityZoneAdmin', {})
+      if (result.code !== 0) {
+        wx.showToast({ title: result.msg || '获取配置失败', icon: 'none' })
+        return { enabled: false, campusIds: [], slides: [] }
+      }
+      return result.data || { enabled: false, campusIds: [], slides: [] }
+    } catch (err) {
+      wx.showToast({ title: err.msg || '获取配置失败', icon: 'none' })
+      return { enabled: false, campusIds: [], slides: [] }
+    }
+  },
+
+  async saveActivityZone(payload) {
+    try {
+      const result = await this.callDB('saveActivityZone', payload)
+      if (result.code !== 0) {
+        wx.showToast({ title: result.msg || '保存失败', icon: 'none' })
+        return false
+      }
+      if (result.msg) {
+        wx.showToast({ title: result.msg, icon: 'none', duration: 2800 })
+      }
+      return true
+    } catch (err) {
+      wx.showToast({ title: err.msg || '保存失败', icon: 'none' })
+      return false
+    }
+  },
+
+  async endActivityZone() {
+    try {
+      const result = await this.callDB('endActivityZone', {})
+      if (result.code !== 0) {
+        wx.showToast({ title: result.msg || '操作失败', icon: 'none' })
+        return null
+      }
+      wx.showToast({ title: result.msg || '已结束本期活动', icon: 'none', duration: 2800 })
+      return result.data || {}
+    } catch (err) {
+      wx.showToast({ title: err.msg || '操作失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async resolveAnnouncementsMedia(list) {
+    if (!Array.isArray(list) || !list.length) return list || []
+    const ids = []
+    list.forEach((item) => {
+      const imgs = Array.isArray(item.images) ? item.images : []
+      imgs.forEach((u) => {
+        if (typeof u === 'string' && u.startsWith('cloud://')) ids.push(u)
+      })
+    })
+    if (!ids.length) return list
+    const urlMap = await this.resolveFileUrlsMap(ids)
+    return list.map((item) => ({
+      ...item,
+      images: (Array.isArray(item.images) ? item.images : []).map((u) => (urlMap[u] ? urlMap[u] : u))
+    }))
+  },
+
+  async createAnnouncement(data) {
+    try {
+      const result = await this.callDB('createAnnouncement', data)
+      return result
+    } catch (err) {
+      wx.showToast({ title: err.msg || '创建公告失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async publishAnnouncement(announcementId, sendNotify = true) {
+    try {
+      return await this.callDB('publishAnnouncement', { announcementId, sendNotify })
+    } catch (err) {
+      wx.showToast({ title: err.msg || '发布公告失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async updateAnnouncement(announcementId, data = {}) {
+    try {
+      return await this.callDB('updateAnnouncement', { announcementId, ...data })
+    } catch (err) {
+      wx.showToast({ title: err.msg || '更新公告失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async revokeAnnouncement(announcementId) {
+    try {
+      return await this.callDB('revokeAnnouncement', { announcementId })
+    } catch (err) {
+      wx.showToast({ title: err.msg || '撤回公告失败', icon: 'none' })
+      return null
+    }
+  },
+
+  async markAnnouncementRead(announcementId) {
+    try {
+      await this.callDB('markAnnouncementRead', { announcementId })
+      this.invalidateCacheByPrefix('unread:')
+      return true
+    } catch (err) {
+      return false
+    }
+  },
+
+  async getUnreadAnnouncementCount() {
+    return this.cachedCall('unread:announcement', 5000, async () => {
+      try {
+        const result = await this.callDB('getUnreadAnnouncementCount')
+        return (result.data && result.data.unreadCount) || 0
+      } catch (err) {
+        return 0
+      }
+    })
+  },
+
   resolveTabBar(tabBarInstance) {
     return tabBarInstance ||
       (getCurrentPages().length > 0 &&
@@ -976,6 +1426,11 @@ App({
     const map = {}
     const now = Date.now()
     const pending = []
+    const normalizedList = Array.from(new Set(fileList.filter((fid) =>
+      typeof fid === 'string' && fid.startsWith('cloud://')
+    )))
+    if (normalizedList.length === 0) return []
+    this._tempUrlInflight = this._tempUrlInflight || new Map()
 
     const ingest = (rawList) => {
       if (!Array.isArray(rawList)) return
@@ -991,9 +1446,10 @@ App({
           })
         }
       })
+      this.pruneRuntimeCaches()
     }
 
-    fileList.forEach((fid) => {
+    normalizedList.forEach((fid) => {
       const cached = this._tempUrlCache.get(fid)
       if (cached && cached.expireAt > now) {
         map[fid] = cached.value
@@ -1003,41 +1459,85 @@ App({
     })
 
     if (pending.length === 0) {
-      return fileList.filter((fid) => map[fid]).map((fid) => map[fid])
+      return normalizedList.filter((fid) => map[fid]).map((fid) => map[fid])
+    }
+
+    const inflightResults = await Promise.all(pending.map(async (fid) => {
+      const p = this._tempUrlInflight.get(fid)
+      if (!p) return null
+      try {
+        return await p
+      } catch (e) {
+        return null
+      }
+    }))
+    inflightResults.forEach((item) => {
+      if (item && item.fileID && item.tempFileURL) map[item.fileID] = item
+    })
+
+    const missingBeforeFetch = pending.filter((fid) => !map[fid] && !this._tempUrlInflight.get(fid))
+    if (missingBeforeFetch.length === 0) {
+      return normalizedList.filter((fid) => map[fid]).map((fid) => map[fid])
     }
 
     if (this.globalData.cloudReady && typeof wx !== 'undefined' && wx.cloud && typeof wx.cloud.getTempFileURL === 'function') {
-      for (let i = 0; i < pending.length; i += chunkSize) {
-        const chunk = pending.slice(i, i + chunkSize)
+      for (let i = 0; i < missingBeforeFetch.length; i += chunkSize) {
+        const chunk = missingBeforeFetch.slice(i, i + chunkSize)
         try {
-          const res = await new Promise((resolve, reject) => {
+          const fetchPromise = new Promise((resolve, reject) => {
             wx.cloud.getTempFileURL({
               fileList: chunk,
               success: resolve,
               fail: reject
             })
           })
+          chunk.forEach((fid) => {
+            this._tempUrlInflight.set(fid, fetchPromise.then((res) => {
+              const item = ((res && res.fileList) || []).find((x) =>
+                (x.fileID || x.FileID || x.fileId) === fid
+              )
+              if (!item) return null
+              const url = item.tempFileURL || item.TempFileURL || item.download_url || item.download_URL
+              return url ? { fileID: fid, tempFileURL: url } : null
+            }))
+          })
+          const res = await fetchPromise
           ingest(res && res.fileList)
         } catch (err) {
           console.error('[getTempFileUrls] 客户端解析失败:', err)
+        } finally {
+          chunk.forEach((fid) => this._tempUrlInflight.delete(fid))
         }
       }
     }
 
-    const missing = pending.filter((fid) => typeof fid === 'string' && fid.startsWith('cloud://') && !map[fid])
+    const missing = missingBeforeFetch.filter((fid) => typeof fid === 'string' && fid.startsWith('cloud://') && !map[fid])
     if (missing.length > 0) {
       for (let i = 0; i < missing.length; i += chunkSize) {
         const chunk = missing.slice(i, i + chunkSize)
         try {
-          const result = await this.callDB('getTempFileUrls', { fileList: chunk })
+          const fetchPromise = this.callDB('getTempFileUrls', { fileList: chunk })
+          chunk.forEach((fid) => {
+            this._tempUrlInflight.set(fid, fetchPromise.then((result) => {
+              const item = ((result && result.data) || []).find((x) =>
+                (x.fileID || x.FileID || x.fileId) === fid
+              )
+              if (!item) return null
+              const url = item.tempFileURL || item.TempFileURL || item.download_url || item.download_URL
+              return url ? { fileID: fid, tempFileURL: url } : null
+            }))
+          })
+          const result = await fetchPromise
           if (result.data && result.data.length) ingest(result.data)
         } catch (err) {
           console.error('[getTempFileUrls] 云函数分片失败:', err)
+        } finally {
+          chunk.forEach((fid) => this._tempUrlInflight.delete(fid))
         }
       }
     }
 
-    return fileList.filter((fid) => map[fid]).map((fid) => map[fid])
+    return normalizedList.filter((fid) => map[fid]).map((fid) => map[fid])
   },
 
   /**

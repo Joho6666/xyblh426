@@ -1,4 +1,5 @@
 const app = getApp()
+const { MARKET_BROWSE_CATEGORIES } = require('../../utils/marketCategories')
 const MARKET_CACHE_KEY = 'market_feed_cache_v1'
 const MARKET_CACHE_TTL = 5 * 60 * 1000
 
@@ -70,23 +71,7 @@ Page({
     mediaLoadedMap: {},
     currentCategory: 0,
     searchKeyword: '',
-    categories: [
-      { name: '全部', icon: '🛍️' },
-      { name: '书籍', icon: '📚' },
-      { name: '手机数码', icon: '📱' },
-      { name: '电器', icon: '🔌' },
-      { name: '生活用品', icon: '🧴' },
-      { name: '美妆', icon: '💄' },
-      { name: '男装', icon: '👕' },
-      { name: '女装', icon: '👗' },
-      { name: '医药', icon: '💊' },
-      { name: '玩乐', icon: '🎮' },
-      { name: '车品', icon: '🚲' },
-      { name: '技能服务', icon: '🛠️' },
-      { name: '虚拟产品', icon: '🧠' },
-      { name: '餐饮', icon: '🍱' },
-      { name: '其他', icon: '📦' }
-    ],
+    categories: MARKET_BROWSE_CATEGORIES,
     goods: [],
     leftCol: [],
     rightCol: [],
@@ -100,6 +85,10 @@ Page({
 
   onLoad() {
     this.setData(getNavMetrics())
+    const maxIdx = (this.data.categories || []).length - 1
+    if (maxIdx >= 0 && this.data.currentCategory > maxIdx) {
+      this.setData({ currentCategory: 0 })
+    }
     this.restoreCachedGoods()
 
     if (app.globalData.cloudReady && app.hasSelectedCampusInStorage()) {
@@ -241,12 +230,16 @@ Page({
 
   _scheduleMediaFallback(goods) {
     if (this._mediaFallbackTimer) clearTimeout(this._mediaFallbackTimer)
+    const sig = (goods || []).map((g) => g && g._id).filter(Boolean).join(',')
+    this._mediaFallbackSig = sig
     this._mediaFallbackTimer = setTimeout(() => {
+      this._mediaFallbackTimer = null
+      if (this._mediaFallbackSig !== sig) return
       const map = this.data.mediaLoadedMap
       const batch = {}
       let changed = false
       ;(goods || []).forEach((g) => {
-        if (g._id && !map[g._id]) {
+        if (g && g._id && !map[g._id]) {
           batch[`mediaLoadedMap.${g._id}`] = true
           changed = true
         }
@@ -284,7 +277,7 @@ Page({
     }, 80)
   },
 
-  async loadGoods() {
+  async loadGoods(options = {}) {
     const campusId = app.getCommittedCampusId()
     if (!campusId) {
       this.setData({
@@ -297,7 +290,7 @@ Page({
 
     this._reqSeq = (this._reqSeq || 0) + 1
     const requestId = this._reqSeq
-    const requestedPage = this.data.page
+    const requestedPage = Number(options.page || this.data.page || 1)
     this.latestRequestId = requestId
     this.setData({ loading: true, loadError: '' })
     const categoryName = this.data.categories[this.data.currentCategory].name
@@ -351,11 +344,12 @@ Page({
         resolved = items
       }
 
+      if (requestId !== this.latestRequestId) return
+
       const mergedGoods = requestedPage === 1
         ? resolved
-        : [...this.data.goods.slice(0, this.data.goods.length - resolved.length), ...resolved]
+        : [...allGoods.slice(0, allGoods.length - resolved.length), ...resolved]
 
-      if (requestId !== this.latestRequestId) return
       if (marketMediaSignature(mergedGoods) === marketMediaSignature(allGoods)) return
 
       const mediaColumns = splitGoods(mergedGoods)
@@ -387,17 +381,22 @@ Page({
   },
 
   onCategoryTap(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    if (!Number.isFinite(index)) return
+    if (index === this.data.currentCategory) return
     this.setData({
-      currentCategory: e.currentTarget.dataset.index,
+      currentCategory: index,
       page: 1,
       hasMore: true
     })
-    this.loadGoods()
+    this.loadGoods({ page: 1 })
   },
 
   onSearchInput(e) {
     const keyword = e.detail.value
-    this.setData({ searchKeyword: keyword, searchLoading: true })
+    const patch = { searchKeyword: keyword }
+    if (!this.data.searchLoading) patch.searchLoading = true
+    this.setData(patch)
     if (this.searchTimer) {
       clearTimeout(this.searchTimer)
     }
@@ -434,7 +433,8 @@ Page({
 
   goToDetail(e) {
     const id = e.currentTarget.dataset.id
-    wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${id}` })
+    if (!id) return
+    wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
   },
 
   goPublish() {
@@ -448,8 +448,9 @@ Page({
 
   onReachBottom() {
     if (!this.data.hasMore || this.data.loading) return
-    this.setData({ page: this.data.page + 1 })
-    this.loadGoods()
+    const nextPage = (this.data.page || 1) + 1
+    this.setData({ page: nextPage })
+    this.loadGoods({ page: nextPage })
   },
 
   onShareAppMessage() {

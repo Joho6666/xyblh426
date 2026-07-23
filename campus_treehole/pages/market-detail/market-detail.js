@@ -1,5 +1,6 @@
 // pages/market-detail/market-detail.js - 商品详情
 const app = getApp()
+const { resolveGoodsIdFromPageOptions } = require('../../utils/shareEntry')
 
 Page({
   data: {
@@ -40,18 +41,49 @@ Page({
     this.setData({ showShareSheet: false })
     if (!app.requestComplianceForAction()) return
     wx.navigateTo({
-      url: `/pages/follow/follow?mode=chat&shareType=goods&shareId=${this.data.goodsId}&autoShare=1`
+      url: `/pages/follow/follow?mode=chat&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
     })
   },
 
   onLoad(options) {
-    if (!options.id) {
-      wx.showToast({ title: '商品参数缺失', icon: 'none' })
-      setTimeout(() => wx.navigateBack({ delta: 1 }), 800)
+    const goodsId = resolveGoodsIdFromPageOptions(options)
+    if (!goodsId) {
+      this.setData({
+        goods: null,
+        loadError: '分享链接无效，请让对方重新分享'
+      })
       return
     }
-    this.setData({ goodsId: options.id })
-    app.waitForLogin(() => { this.loadDetailData(options.id) })
+    this.setData({ goodsId })
+    this._startGoodsLoad(goodsId)
+  },
+
+  /** 朋友圈单页：云就绪即加载，登录后台静默进行 */
+  _startGoodsLoad(goodsId) {
+    const run = () => {
+      if (this._goodsLoadStarted || !goodsId) return false
+      if (!app.globalData.cloudReady) return false
+      this._goodsLoadStarted = true
+      this.loadDetailData(goodsId)
+      return true
+    }
+    if (run()) return
+    const timer = setInterval(() => {
+      if (run()) clearInterval(timer)
+    }, 80)
+    setTimeout(() => clearInterval(timer), 10000)
+    if (!app.globalData.isLoggedIn && !app.globalData.loggingIn) {
+      app.doLogin({ silent: true })
+    }
+  },
+
+  onShow() {
+    if (!this.data.goodsId) return
+    if (!app.globalData.isLoggedIn) {
+      if (!this._goodsLoadStarted && app.globalData.cloudReady) {
+        this._startGoodsLoad(this.data.goodsId)
+      }
+    }
   },
 
   async loadDetailData(id) {
@@ -64,10 +96,16 @@ Page({
   async loadGoods(id) {
     try {
       this.setData({ loadError: '' })
-      const result = await app.callDB('getMarketGoodsById', { goodsId: id })
-      let goods = result.data
+      const result = await app.fetchMarketGoodsForShare(id)
+      let goods = result && result.data
       if (!goods || !goods._id) {
-        this.setData({ goods: null, loadError: '商品不存在或已下架' })
+        const isDev = typeof __wxConfig !== 'undefined' && __wxConfig.envVersion === 'develop'
+        this.setData({
+          goods: null,
+          loadError: isDev
+            ? '加载失败。开发版分享到朋友圈仅项目成员可访问云端，请上传体验版后再试'
+            : '商品不存在或已下架'
+        })
         return
       }
       if (app.globalData.cloudReady) {
@@ -77,7 +115,7 @@ Page({
       const shareImageUrl = await app.computeShareImageUrl(goods)
       this.setData({
         goods,
-        isFavored: !!result.isFavored,
+        isFavored: !!(result && result.isFavored),
         isOwner: goods._openid === app.globalData.openid,
         shareImageUrl
       })
@@ -93,11 +131,12 @@ Page({
 
   onRetryLoad() {
     if (!this.data.goodsId) return
-    this.loadDetailData(this.data.goodsId)
+    this._goodsLoadStarted = false
+    this._startGoodsLoad(this.data.goodsId)
   },
 
   async loadComments(goodsId = this.data.goodsId) {
-    const comments = await app.getMarketComments(goodsId)
+    const comments = await app.fetchMarketCommentsForShare(goodsId)
     let formattedComments = comments.map((item) => ({
       ...item,
       timeStr: app.formatTime(item.createTime)
@@ -145,7 +184,7 @@ Page({
 
   onSellerTap() {
     if (this.data.goods && this.data.goods._openid) {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${this.data.goods._openid}` })
+      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(this.data.goods._openid)}` })
     }
   },
 
@@ -190,7 +229,7 @@ Page({
     if (this.data.goods) {
       const g = this.data.goods
       wx.navigateTo({
-        url: `/pages/chat/chat?openid=${g._openid}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=goods&shareId=${this.data.goodsId}&autoShare=1`
+        url: `/pages/chat/chat?openid=${encodeURIComponent(g._openid)}&nickname=${encodeURIComponent(g.nickname || '卖家')}&shareType=${encodeURIComponent('goods')}&shareId=${encodeURIComponent(this.data.goodsId)}&autoShare=${encodeURIComponent('1')}`
       })
     }
   },
@@ -293,9 +332,27 @@ Page({
 
   onShareAppMessage() {
     const g = this.data.goods
+    const id = this.data.goodsId || (g && g._id) || ''
+    const qid = encodeURIComponent(id)
     return {
       title: g ? `¥${g.price} ${g.title}` : '校园集市好物',
-      path: `/pages/market-detail/market-detail?id=${this.data.goodsId}`,
+      path: id ? `/pages/market-detail/market-detail?id=${qid}` : '/pages/market/market',
+      imageUrl: this.data.shareImageUrl || '/images/icon_share.png'
+    }
+  },
+
+  onShareTimeline() {
+    const g = this.data.goods
+    const id = this.data.goodsId || (g && g._id) || ''
+    let title = '校园集市好物'
+    if (g && g.title) {
+      const priceText = g.price != null && g.price !== '' ? `¥${g.price} ` : ''
+      const raw = `${priceText}${g.title}`
+      title = raw.length > 20 ? `${raw.substring(0, 20)}...` : raw
+    }
+    return {
+      title,
+      query: id ? `id=${encodeURIComponent(id)}` : '',
       imageUrl: this.data.shareImageUrl || '/images/icon_share.png'
     }
   }

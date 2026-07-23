@@ -95,8 +95,12 @@
 .nav-tabs {
   display: flex;
   align-items: flex-end;
-  gap: 56rpx;
+  gap: 36rpx;
   flex-shrink: 0;
+}
+
+.nav-tab-tap {
+  opacity: 0.72;
 }
 
 .nav-tab {
@@ -220,6 +224,238 @@
   font-size: 36rpx;
   color: #bbbbbb;
   line-height: 1;
+}
+
+.announcement-strip {
+  margin: 10rpx 24rpx 8rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 16rpx;
+  background: #f7f9fc;
+  border: 1rpx solid #e8edf5;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.announcement-badge {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  color: #fff;
+  background: #426089;
+  border-radius: 999rpx;
+  padding: 4rpx 12rpx;
+}
+
+.announcement-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: #1f2b3d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.announcement-arrow {
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: #7f8ca2;
+}
+
+.announcement-modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10080;
+  background: rgba(0, 0, 0, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36rpx;
+  box-sizing: border-box;
+}
+
+.subscribe-guide-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10120;
+  background: rgba(0, 0, 0, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34rpx;
+  box-sizing: border-box;
+}
+
+.subscribe-guide-modal {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 26rpx;
+  padding: 30rpx 24rpx 24rpx;
+  box-sizing: border-box;
+  box-shadow: 0 20rpx 56rpx rgba(0, 0, 0, 0.22);
+}
+
+.subscribe-guide-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #111111;
+}
+
+.subscribe-guide-step {
+  display: inline-block;
+  margin-bottom: 8rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: #426089;
+  background: #eaf0fb;
+}
+
+.subscribe-guide-desc {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: #495465;
+}
+
+.subscribe-guide-list {
+  margin-top: 14rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 14rpx;
+  background: #f6f8fc;
+}
+
+.subscribe-guide-item {
+  display: block;
+  font-size: 25rpx;
+  color: #42506a;
+  line-height: 1.7;
+}
+
+.subscribe-guide-actions {
+  margin-top: 20rpx;
+  display: flex;
+  gap: 12rpx;
+}
+
+.subscribe-guide-btn {
+  flex: 1;
+  height: 76rpx;
+  border-radius: 14rpx;
+  text-align: center;
+  line-height: 76rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.subscribe-guide-btn.ghost {
+  color: #5d6b80;
+  background: #eff2f7;
+}
+
+.subscribe-guide-btn.primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #426089, #5a7bab);
+}
+
+.announcement-modal {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 28rpx 24rpx 24rpx;
+  box-sizing: border-box;
+  position: relative;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.announcement-modal-close {
+  position: absolute;
+  right: 18rpx;
+  top: 12rpx;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 56rpx;
+  font-size: 40rpx;
+  color: #7e8794;
+}
+
+.announcement-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 14rpx;
+  padding-right: 44rpx;
+}
+
+.announcement-modal-badge {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #fff;
+  background: #426089;
+  border-radius: 999rpx;
+  padding: 4rpx 14rpx;
+}
+
+.announcement-modal-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1f2b3d;
+}
+
+.announcement-modal-content {
+  display: block;
+  font-size: 27rpx;
+  color: #3f4651;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  max-height: none;
+  overflow: visible;
+}
+
+.announcement-modal-cover {
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+  border-radius: 16rpx;
+  margin-bottom: 14rpx;
+  background: #f5f7fb;
+}
+
+.announcement-modal-actions {
+  margin-top: 22rpx;
+  display: flex;
+  gap: 14rpx;
+}
+
+.announcement-modal-btn {
+  flex: 1;
+  height: 78rpx;
+  border-radius: 14rpx;
+  text-align: center;
+  line-height: 78rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.announcement-modal-btn.ghost {
+  background: #f3f5f8;
+  color: #607086;
+}
+
+.announcement-modal-btn.primary {
+  background: #426089;
+  color: #fff;
 }
 
 .campus-mask {
@@ -459,7 +695,22 @@
 }
 
 /* 双列卡片：白底、轻描边、圆角封面 */
+.wf-activity-tag {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  z-index: 3;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #ff2442 0%, #ff6b4a 100%);
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 36, 66, 0.35);
+}
+
 .wf-card {
+  position: relative;
   overflow: hidden;
   border-radius: 16rpx;
   background: #ffffff;

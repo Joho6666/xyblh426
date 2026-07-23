@@ -11,6 +11,50 @@
 </view>
 
 <view class="page">
+  <view class="subscribe-guide-mask" wx:if="{{showSubscribeGuideModal}}" bindtap="onCloseSubscribeGuideModal">
+    <view class="subscribe-guide-modal" catchtap="">
+      <text class="subscribe-guide-step">第{{subscribeGuideStep}}步 / 2</text>
+      <text class="subscribe-guide-title">{{subscribeGuideStep === 1 ? '先开启核心互动提醒' : '继续开启收藏与下架提醒'}}</text>
+      <text class="subscribe-guide-desc" wx:if="{{subscribeGuideStep === 1}}">你最常用的互动通知，建议优先开启：</text>
+      <text class="subscribe-guide-desc" wx:else>再点一次补齐收藏/转发/下架提醒：</text>
+      <view class="subscribe-guide-list">
+        <block wx:if="{{subscribeGuideStep === 1}}">
+          <text class="subscribe-guide-item">- 点赞提醒</text>
+          <text class="subscribe-guide-item">- 私信提醒</text>
+          <text class="subscribe-guide-item">- 评论互动提醒</text>
+        </block>
+        <block wx:else>
+          <text class="subscribe-guide-item">- 谁收藏了你的帖子</text>
+          <text class="subscribe-guide-item">- 谁转发了你的帖子</text>
+          <text class="subscribe-guide-item">- 你收藏/想要的商品被下架</text>
+          <text class="subscribe-guide-item">- 开启后可在设置页随时调整</text>
+        </block>
+      </view>
+      <view class="subscribe-guide-actions">
+        <view class="subscribe-guide-btn ghost" bindtap="onCloseSubscribeGuideModal">{{subscribeGuideStep === 1 ? '稍后再说' : '先不补充'}}</view>
+        <view class="subscribe-guide-btn primary" bindtap="onEnableSubscribeFromGuide">
+          {{subscribeGuideSubmitting ? '请求中...' : (subscribeGuideStep === 1 ? '开启第1步' : '开启第2步')}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="announcement-modal-mask" wx:if="{{showAnnouncementModal}}" bindtap="onTapAnnouncementMask">
+    <view class="announcement-modal" catchtap="">
+      <view class="announcement-modal-close" bindtap="onCloseAnnouncementModal">×</view>
+      <view class="announcement-modal-head">
+        <text class="announcement-modal-badge">公告</text>
+        <text class="announcement-modal-title">{{modalAnnouncement.title}}</text>
+      </view>
+      <image class="announcement-modal-cover" wx:if="{{modalAnnouncement.images && modalAnnouncement.images.length}}" src="{{modalAnnouncement.images[0]}}" mode="widthFix"></image>
+      <text class="announcement-modal-content">{{modalAnnouncement.content}}</text>
+      <view class="announcement-modal-actions">
+        <view class="announcement-modal-btn ghost" bindtap="onCloseAnnouncementModal">关闭</view>
+        <view class="announcement-modal-btn primary" bindtap="onOpenAnnouncementFromModal">查看详情</view>
+      </view>
+    </view>
+  </view>
+
   <view class="index-ambient">
     <view class="ambient-orb ambient-orb-1"></view>
     <view class="ambient-orb ambient-orb-2"></view>
@@ -21,6 +65,7 @@
       <view class="nav-tabs">
         <text class="nav-tab {{feedType === 'follow' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="follow">关注</text>
         <text class="nav-tab {{feedType === 'discover' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="discover">发现</text>
+        <text class="nav-tab" bindtap="onOpenActivityZone" hover-class="nav-tab-tap" hover-stay-time="80">活动</text>
       </view>
       <view class="nav-search" bindtap="onSearchFocus">
         <view class="nav-search-ico" aria-hidden="true"></view>
@@ -44,6 +89,12 @@
   </view>
 
   <view style="height: {{navOffsetHeight}}px;"></view>
+
+  <view class="announcement-strip" wx:if="{{latestAnnouncement}}" bindtap="onOpenAnnouncement">
+    <text class="announcement-badge">公告</text>
+    <text class="announcement-title">{{latestAnnouncement.title}}</text>
+    <text class="announcement-arrow">›</text>
+  </view>
 
   <view class="campus-mask" wx:if="{{showCampusPicker}}" catchtouchmove="preventCampusMove">
     <view class="campus-sheet" catchtap="">
@@ -118,6 +169,7 @@
   <view class="waterfall" wx:if="{{!showSkeleton}}">
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
+        <view class="wf-activity-tag" wx:if="{{item.inActivityZone}}">活动</view>
         <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
           <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
           <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
@@ -153,6 +205,7 @@
 
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40 + 20}}ms;">
+        <view class="wf-activity-tag" wx:if="{{item.inActivityZone}}">活动</view>
         <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
           <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
           <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />

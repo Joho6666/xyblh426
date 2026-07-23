@@ -2,8 +2,9 @@
 /* 参考 _2 设计：帖子详情 + 评论列表 + 底部输入栏 */
 
 .page-container {
-  padding: 16rpx 28rpx 32rpx;
+  padding: 0 0 32rpx;
   box-sizing: border-box;
+  background: #f7f8fa;
 }
 
 .detail-empty-state {
@@ -66,10 +67,11 @@
 
 /* ========== 帖子详情卡片 ========== */
 .post-detail-card {
-  border-radius: var(--radius-lg);
-  padding: 32rpx 28rpx;
+  border-radius: 0 0 28rpx 28rpx;
+  padding: 0 24rpx 28rpx;
   margin-bottom: 24rpx;
-  box-shadow: var(--shadow-card);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   animation: detailFadeIn 0.3s ease both;
 }
 
@@ -79,11 +81,29 @@
 }
 
 /* 用户信息头部 */
+.hero-media-wrap {
+  margin: 0 -24rpx 16rpx;
+  position: relative;
+  overflow: hidden;
+  background: #eef1f4;
+}
+
+.media-indicator {
+  position: absolute;
+  right: 20rpx;
+  bottom: 20rpx;
+  background: rgba(0, 0, 0, 0.56);
+  color: #ffffff;
+  font-size: 22rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+}
+
 .detail-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32rpx;
+  margin: 8rpx 0 24rpx;
 }
 
 .detail-user {
@@ -93,8 +113,8 @@
 }
 
 .avatar-lg {
-  width: 96rpx;
-  height: 96rpx;
+  width: 88rpx;
+  height: 88rpx;
 }
 
 .detail-user-info {
@@ -114,9 +134,29 @@
   margin-top: 4rpx;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.follow-btn {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ff2e63, #ff4d7c);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.follow-btn-following {
+  background: #f2f4f8;
+  color: #586174;
+}
+
 /* 帖子正文 */
 .detail-body {
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
 }
 
 .detail-title {
@@ -132,24 +172,28 @@
 .detail-content {
   font-size: var(--text-md);
   color: var(--on-surface);
-  line-height: 1.8;
-  margin-bottom: 24rpx;
+  line-height: 1.75;
 }
 
 /* 多图展示 */
 .detail-images {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  border-radius: 24rpx;
+  gap: 0;
+  border-radius: 0;
   overflow: hidden;
+}
+
+.detail-image-swiper {
+  width: 100%;
+  height: 720rpx;
 }
 
 .detail-img-wrap {
   position: relative;
   width: 100%;
-  min-height: 200rpx;
-  border-radius: 16rpx;
+  height: 720rpx;
+  border-radius: 0;
   overflow: hidden;
   animation: detailImgIn 0.35s ease both;
 }
@@ -177,7 +221,8 @@
 .detail-image {
   display: block;
   width: 100%;
-  border-radius: 16rpx;
+  height: 100%;
+  border-radius: 0;
   opacity: 0;
   transition: opacity 0.25s ease;
   animation: detailImgSafeShow 0s 2s forwards;
@@ -203,21 +248,22 @@
 
 /* 帖子视频 */
 .detail-video-wrap {
-  border-radius: 32rpx;
+  border-radius: 0;
   overflow: hidden;
   background-color: #000;
   display: flex;
   justify-content: center;
+  margin-top: 0;
 }
 
 .detail-video {
   width: 100%;
-  height: 480rpx;
+  height: 720rpx;
 }
 
 /* 互动按钮栏：单行紧凑排列，举报紧跟在分享旁 */
 .detail-actions {
-  padding-top: 28rpx;
+  padding-top: 24rpx;
   border-top: 2rpx solid rgba(171, 179, 185, 0.15);
 }
 
@@ -225,49 +271,63 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8rpx 20rpx;
+  gap: 14rpx;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  padding: 8rpx 0;
+  justify-content: center;
+  gap: 10rpx;
+  min-height: 72rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #f3f5f8;
+  box-sizing: border-box;
+}
+
+.action-btn-hover {
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 .action-emoji {
-  font-size: 36rpx;
+  font-size: 32rpx;
 }
 
 .action-count {
-  font-size: 26rpx;
-  color: var(--on-surface-variant);
-  font-weight: 500;
-}
-
-.action-active .action-count {
-  color: var(--accent);
+  font-size: 25rpx;
+  color: #4b5565;
   font-weight: 600;
 }
 
+.action-active .action-count {
+  color: #e11d48;
+  font-weight: 600;
+}
+
+.action-active {
+  background: #ffe8ef;
+}
+
 .action-share-merge {
-  padding-right: 4rpx;
+  background: #eef4ff;
 }
 
 .report-inline {
-  padding: 8rpx 16rpx;
-  border-radius: 999rpx;
-  background: rgba(171, 179, 185, 0.12);
+  min-height: 72rpx;
+  padding: 0 22rpx;
+  background: #fff4e8;
 }
 
 .report-emoji {
-  font-size: 28rpx;
+  font-size: 30rpx;
 }
 
 .report-label {
-  font-size: 24rpx;
-  color: var(--outline);
-  font-weight: 500;
+  font-size: 25rpx;
+  color: #9a3412;
+  font-weight: 600;
 }
 
 .comment-like-emoji {
@@ -359,7 +419,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4rpx;
+  padding: 0 24rpx;
   margin-bottom: 24rpx;
 }
 
@@ -407,11 +467,15 @@
 .comment-list {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 12rpx;
+  padding: 0 24rpx;
 }
 
 .comment-card {
-  padding: 28rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
 }
 
 .comment-item {
@@ -644,6 +708,7 @@
   align-items: center;
   justify-content: center;
   padding: 64rpx 0;
+  margin: 0 24rpx;
 }
 
 .comment-empty-text {

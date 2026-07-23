@@ -2,6 +2,7 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+const _ = db.command
 
 function parseNumericIdFromRef(ref) {
   const s = String(ref || '').trim()
@@ -49,21 +50,37 @@ async function bindPeer(event) {
     const hadPeer = !!(user.inviterOpenid && String(user.inviterOpenid).trim())
 
     if (!hadPeer) {
-      await db.collection('users').doc(user._id).update({
-        data: {
+      // 使用条件更新（仅当 inviterOpenid 不存在或为空时才写入），并发场景下只有一次成功
+      const updateRes = await db.collection('users')
+        .where({
+          _id: user._id,
+          inviterOpenid: _.or([_.exists(false), _.eq(''), _.eq(null)])
+        })
+        .update({
+          data: {
+            inviterOpenid: inviter._openid,
+            peerInviteRef: ref,
+            peerInviteBindTime: now
+          }
+        })
+      const isFirst = !!(updateRes && updateRes.stats && updateRes.stats.updated > 0)
+      await db.collection('peer_referrals').add({
+        data: { ...baseRow, isFirstBind: isFirst }
+      })
+      if (isFirst) {
+        return ok({
+          message: '已绑定邀请人',
           inviterOpenid: inviter._openid,
           peerInviteRef: ref,
-          peerInviteBindTime: now
-        }
-      })
-      await db.collection('peer_referrals').add({
-        data: { ...baseRow, isFirstBind: true }
-      })
+          isFirstBind: true
+        })
+      }
+      // 并发兜底：另一并发请求已绑定，回查实际值
+      const fresh = await db.collection('users').doc(user._id).get().catch(() => ({ data: null }))
       return ok({
-        message: '已绑定邀请人',
-        inviterOpenid: inviter._openid,
-        peerInviteRef: ref,
-        isFirstBind: true
+        message: '已记录扫码（邀请关系以首次绑定为准）',
+        inviterOpenid: (fresh && fresh.data && fresh.data.inviterOpenid) || inviter._openid,
+        isFirstBind: false
       })
     }
 

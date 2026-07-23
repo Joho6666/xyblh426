@@ -130,18 +130,16 @@ Page({
       return
     }
     const nickName = this.data.nickName.trim()
-    if (!nickName) {
-      wx.showToast({ title: '请输入昵称', icon: 'none' })
-      return
-    }
-    const check = app.checkContent(nickName)
-    if (!check.pass) {
-      wx.showToast({ title: '昵称包含违规内容，请修改', icon: 'none' })
-      return
+    if (nickName) {
+      const check = app.checkContent(nickName)
+      if (!check.pass) {
+        wx.showToast({ title: '昵称包含违规内容，请修改', icon: 'none' })
+        return
+      }
     }
 
     if (this.data.canQuickEnter && u && u.agreedPrivacy === true) {
-      const nickSame = (u.nickName || '').trim() === nickName
+      const nickSame = !nickName || (u.nickName || '').trim() === nickName
       const noNewAvatar = !this.data.hasChosenAvatar
       if (nickSame && noNewAvatar) {
         wx.switchTab({ url: '/pages/index/index' })
@@ -165,15 +163,16 @@ Page({
           finalAvatarUrl = '/images/avatar_default.png'
         }
       }
-      const result = await app.updateProfile({
-        nickName,
-        avatarUrl: finalAvatarUrl,
+      const payload = {
         profileCompleted: true
-      })
+      }
+      if (nickName) payload.nickName = nickName
+      if (this.data.hasChosenAvatar) payload.avatarUrl = finalAvatarUrl
+      const result = await app.updateProfile(payload)
       if (!result) throw new Error('更新资料失败')
       if (app.globalData.userInfo) {
-        app.globalData.userInfo.nickName = nickName
-        app.globalData.userInfo.avatarUrl = finalAvatarUrl
+        if (nickName) app.globalData.userInfo.nickName = nickName
+        if (this.data.hasChosenAvatar) app.globalData.userInfo.avatarUrl = finalAvatarUrl
         app.globalData.userInfo.profileCompleted = true
       }
       wx.hideLoading()

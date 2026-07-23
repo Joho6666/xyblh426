@@ -2,6 +2,7 @@
 // 云数据库驱动：帖子详情、点赞、评论、举报、管理员操作
 
 const app = getApp()
+const { resolvePostIdFromPageOptions } = require('../../utils/shareEntry')
 
 Page({
   data: {
@@ -21,7 +22,10 @@ Page({
     commentInputFocus: false,
     showShareChatSheet: false,
     shareImageUrl: '/images/icon_share.png',
-    detailImgLoaded: {}
+    detailImgLoaded: {},
+    isFollowingAuthor: false,
+    showFollowAuthorBtn: false,
+    currentImageIndex: 0
   },
 
   preventMove() {},
@@ -42,33 +46,112 @@ Page({
     this.setData({ [`detailImgLoaded.${idx}`]: true })
   },
 
+  onImageSwiperChange(e) {
+    const current = e && e.detail ? e.detail.current : 0
+    this.setData({ currentImageIndex: Number(current) || 0 })
+  },
+
   onSheetPrivateMsg() {
     this.setData({ showShareChatSheet: false })
     this.onSendToChat()
   },
 
+  async onToggleFollowAuthor() {
+    if (!app.requestComplianceForAction()) return
+    const targetOpenid = this.data.post && this.data.post._openid
+    if (!targetOpenid) return
+    const isFollowing = await app.toggleFollow(targetOpenid)
+    if (isFollowing !== null) {
+      this.setData({ isFollowingAuthor: !!isFollowing })
+      wx.showToast({ title: isFollowing ? '已关注作者' : '已取消关注', icon: 'none' })
+    }
+  },
+
   onLoad(options) {
-    const postId = options.id
+    const postId = resolvePostIdFromPageOptions(options)
     if (!postId) {
-      wx.showToast({ title: '帖子参数缺失', icon: 'none' })
-      setTimeout(() => wx.navigateBack({ delta: 1 }), 800)
+      this.setData({
+        loading: false,
+        loadError: '分享链接无效，请让对方重新分享'
+      })
       return
     }
     // 避免 onLoad 与首次 onShow 各拉一次详情（首屏双倍请求）
     this._detailFirstShow = true
     this.setData({ postId })
-    app.waitForLogin(() => {
+    this._startPostLoad(postId)
+  },
+
+  /** 朋友圈单页/冷启动：云就绪即拉帖，登录在后台静默进行 */
+  _startPostLoad(postId) {
+    const run = () => {
+      if (this._postLoadStarted || !postId) return false
+      if (!app.globalData.cloudReady) return false
+      this._postLoadStarted = true
       this.loadPostData(postId)
-    })
+      return true
+    }
+    if (run()) return
+    const timer = setInterval(() => {
+      if (run()) clearInterval(timer)
+    }, 80)
+    setTimeout(() => clearInterval(timer), 10000)
+    if (!app.globalData.isLoggedIn && !app.globalData.loggingIn) {
+      app.doLogin({ silent: true })
+    }
   },
 
   onShow() {
-    if (!this.data.postId || !app.globalData.isLoggedIn) return
-    if (this._detailFirstShow) {
-      this._detailFirstShow = false
+    if (!this.data.postId) return
+    if (!app.globalData.isLoggedIn) {
+      if (!this._postLoadStarted && app.globalData.cloudReady) {
+        this._startPostLoad(this.data.postId)
+      }
       return
     }
+    // 首次 onShow 若已在登录态完成首屏加载，则跳过；
+    // 但若首屏是匿名加载（_loadedWhileLoggedIn=false），则强制以登录态再拉一次，刷新 isLiked/isFavored 等
+    if (this._detailFirstShow) {
+      this._detailFirstShow = false
+      if (this._loadedWhileLoggedIn) {
+        return
+      }
+    }
+    const force = typeof app.consumeDetailNeedsRefresh === 'function'
+      && app.consumeDetailNeedsRefresh(this.data.postId)
+    const now = Date.now()
+    if (!force && this._lastDetailReloadAt && (now - this._lastDetailReloadAt) < 12000) {
+      return
+    }
+    this._lastDetailReloadAt = now
     this.loadPostData(this.data.postId)
+  },
+
+  async _formatCommentsForView(comments) {
+    let formattedComments = (comments || []).map((c) => ({
+      ...c,
+      time: app.formatTime(c.createTime)
+    }))
+    if (app.globalData.cloudReady && formattedComments.length) {
+      const avMap = await app.resolveFileUrlsMap(formattedComments.map((c) => c.avatar))
+      formattedComments = formattedComments.map((c) => ({
+        ...c,
+        avatar: avMap[c.avatar] || c.avatar || '/images/avatar_default.png'
+      }))
+    }
+    return formattedComments
+  },
+
+  /** 仅刷新评论列表（发帖互动后避免整页重拉） */
+  async refreshCommentsOnly(postId) {
+    if (!postId) return
+    try {
+      const comments = await app.fetchCommentsForShare(postId, this.data.sortBy)
+      const formattedComments = await this._formatCommentsForView(comments)
+      this.setData({ comments: formattedComments })
+    } catch (err) {
+      console.warn('refreshCommentsOnly', err)
+    }
   },
 
   // 加载帖子数据（从云数据库）
@@ -93,45 +176,46 @@ Page({
       return
     }
 
-    this.setData({ loading: true, loadError: '', detailImgLoaded: {} })
+    this.setData({ loading: true, loadError: '', detailImgLoaded: {}, currentImageIndex: 0 })
 
     try {
-      const postData = await app.getPostById(postId)
+      const sortBy = this.data.sortBy
+      const postData = await app.fetchPostForShare(postId)
       if (!postData) {
+        const isDev = typeof __wxConfig !== 'undefined' && __wxConfig.envVersion === 'develop'
         this.setData({
           loading: false,
-          loadError: '帖子不存在、已删除，或暂时无法加载'
+          loadError: isDev
+            ? '加载失败。开发版分享到朋友圈仅项目成员可访问云端，请上传体验版后再试'
+            : '帖子不存在、已删除，或暂时无法加载'
         })
         return
+      }
+
+      let comments = []
+      try {
+        comments = await app.fetchCommentsForShare(postId, sortBy)
+      } catch (commentErr) {
+        console.warn('加载评论失败（不影响正文）', commentErr)
       }
 
       const resolvedPost = app.globalData.cloudReady
         ? await app.resolvePostMedia(postData)
         : postData
 
-      // 加载评论（解析 cloud:// 头像）
-      const comments = await app.getComments(postId, this.data.sortBy)
-      let formattedComments = comments.map((c) => ({
-        ...c,
-        time: app.formatTime(c.createTime)
-      }))
-      if (app.globalData.cloudReady && formattedComments.length) {
-        const avMap = await app.resolveFileUrlsMap(formattedComments.map((c) => c.avatar))
-        formattedComments = formattedComments.map((c) => ({
-          ...c,
-          avatar: avMap[c.avatar] || c.avatar || '/images/avatar_default.png'
-        }))
-      }
+      const [formattedComments, shareImageUrl] = await Promise.all([
+        this._formatCommentsForView(comments),
+        app.computeShareImageUrl(resolvedPost)
+      ])
 
       const isAdmin = app.globalData.userInfo && app.globalData.userInfo.role === 'admin'
       const isOwner = resolvedPost._openid === app.globalData.openid
-
-      const shareImageUrl = await app.computeShareImageUrl(resolvedPost)
 
       let postForView = { ...resolvedPost, time: app.formatTime(resolvedPost.createTime) }
       if (postForView.isAnonymous === true && !isOwner) {
         postForView = { ...postForView, _openid: '', userId: '' }
       }
+      const showFollowAuthorBtn = !!(postForView._openid && !isOwner)
 
       this.setData({
         post: postForView,
@@ -140,10 +224,22 @@ Page({
         comments: formattedComments,
         isOwner,
         isAdmin,
+        showFollowAuthorBtn,
+        isFollowingAuthor: false,
         loadError: '',
         loading: false,
         shareImageUrl
       })
+      // 标记本次加载是否在登录态完成，供 onShow 决定是否需要再次以登录态刷新
+      this._loadedWhileLoggedIn = !!app.globalData.isLoggedIn
+
+      if (showFollowAuthorBtn) {
+        try {
+          const authorInfo = await app.getUserInfo(postForView._openid)
+          const isFollowingAuthor = !!(authorInfo && authorInfo.isFollowing)
+          this.setData({ isFollowingAuthor })
+        } catch (e) {}
+      }
     } catch (err) {
       console.error('加载帖子详情失败:', err)
       this.setData({
@@ -155,24 +251,36 @@ Page({
 
   onRetryLoad() {
     if (!this.data.postId) return
-    this.loadPostData(this.data.postId)
+    this._lastDetailReloadAt = 0
+    this._postLoadStarted = false
+    this._startPostLoad(this.data.postId)
   },
 
   async onLikeTap() {
     if (this._likeBusy) return
     if (!app.requestComplianceForAction()) return
+    const prevLiked = this.data.isLiked
+    const prevCount = this.data.post.likes || 0
+    const optimisticLiked = !prevLiked
+    const optimisticCount = Math.max(0, prevCount + (optimisticLiked ? 1 : -1))
+    this.setData({ isLiked: optimisticLiked, 'post.likes': optimisticCount })
     this._likeBusy = true
     try {
       const result = await app.toggleLikePost(this.data.postId)
       if (result) {
-        const curLikes = this.data.post.likes || 0
+        const wasLiked = !!prevLiked
+        const nowLiked = !!result.isLiked
+        const likes = wasLiked === nowLiked ? prevCount : Math.max(0, prevCount + (nowLiked ? 1 : -1))
         this.setData({
-          isLiked: result.isLiked,
-          'post.likes': Math.max(0, curLikes + (result.isLiked ? 1 : -1))
+          isLiked: nowLiked,
+          'post.likes': likes
         })
-        wx.showToast({ title: result.isLiked ? '已点赞' : '取消点赞', icon: 'none' })
+        wx.showToast({ title: nowLiked ? '已点赞' : '取消点赞', icon: 'none' })
+      } else {
+        this.setData({ isLiked: prevLiked, 'post.likes': prevCount })
       }
     } catch (err) {
+      this.setData({ isLiked: prevLiked, 'post.likes': prevCount })
       wx.showToast({ title: '操作失败，请重试', icon: 'none' })
     } finally {
       this._likeBusy = false
@@ -183,17 +291,20 @@ Page({
 
   onSendToChat() {
     if (!app.requestComplianceForAction()) return
+    const authorOpenid = encodeURIComponent((this.data.post && this.data.post._openid) || '')
+    const authorNickname = encodeURIComponent((this.data.post && this.data.post.nickname) || '')
     wx.navigateTo({
-      url: `/pages/follow/follow?mode=chat&shareType=post&shareId=${this.data.postId}&autoShare=1`
+      url: `/pages/share-post/share-post?shareType=post&shareId=${encodeURIComponent(this.data.postId)}&autoShare=1&authorOpenid=${authorOpenid}&authorNickname=${authorNickname}`
     })
   },
 
   onShareAppMessage() {
     const content = this.data.post.content || ''
     const title = content.length > 30 ? content.substring(0, 30) + '...' : (content || '校园便利盒')
+    const qid = encodeURIComponent(this.data.postId || '')
     return {
       title,
-      path: `/pages/detail/detail?id=${this.data.postId}`,
+      path: `/pages/detail/detail?id=${qid}`,
       imageUrl: this.data.shareImageUrl || '/images/icon_share.png'
     }
   },
@@ -203,13 +314,21 @@ Page({
     if (!app.requestComplianceForAction()) return
     wx.showActionSheet({
       itemList: ['内容不适', '垃圾广告', '虚假信息', '其他原因'],
-      success: async (res) => {
+      success: (res) => {
         const reasons = ['内容不适', '垃圾广告', '虚假信息', '其他原因']
         const reason = reasons[res.tapIndex]
-        const result = await app.reportContent(this.data.postId, 'post', reason)
-        if (result) {
-          wx.showToast({ title: '举报已提交，感谢反馈', icon: 'none' })
-        }
+        if (!reason) return
+        ;(async () => {
+          try {
+            const result = await app.reportContent(this.data.postId, 'post', reason)
+            if (result) {
+              wx.showToast({ title: '举报已提交，感谢反馈', icon: 'none' })
+            }
+          } catch (err) {
+            console.warn('[detail.onReportTap] 举报失败', err)
+            wx.showToast({ title: '举报失败，请稍后再试', icon: 'none' })
+          }
+        })()
       }
     })
   },
@@ -217,14 +336,19 @@ Page({
   async onFavorTap() {
     if (this._favorBusy) return
     if (!app.requestComplianceForAction()) return
+    const prevFavored = this.data.isFavored
+    this.setData({ isFavored: !prevFavored })
     this._favorBusy = true
     try {
       const isFavored = await app.toggleFavorPost(this.data.postId)
       if (isFavored !== null) {
         this.setData({ isFavored })
         wx.showToast({ title: isFavored ? '已收藏' : '取消收藏', icon: 'none' })
+      } else {
+        this.setData({ isFavored: prevFavored })
       }
     } catch (err) {
+      this.setData({ isFavored: prevFavored })
       wx.showToast({ title: '操作失败，请重试', icon: 'none' })
     } finally {
       this._favorBusy = false
@@ -275,7 +399,11 @@ Page({
   },
 
   onOwnerEditPost() {
-    wx.navigateTo({ url: `/pages/post-editor/post-editor?mode=edit&id=${this.data.postId}` })
+    const pid = this.data.postId
+    if (!pid) return
+    wx.navigateTo({
+      url: `/pages/post-editor/post-editor?mode=edit&id=${encodeURIComponent(pid)}`
+    })
   },
 
   async onSortChange(e) {
@@ -283,15 +411,8 @@ Page({
     if (sortBy === this.data.sortBy) return
     this.setData({ sortBy })
     try {
-      const comments = await app.getComments(this.data.postId, sortBy)
-      let formatted = comments.map(c => ({ ...c, time: app.formatTime(c.createTime) }))
-      if (app.globalData.cloudReady && formatted.length) {
-        const avMap = await app.resolveFileUrlsMap(formatted.map(c => c.avatar))
-        formatted = formatted.map(c => ({
-          ...c,
-          avatar: avMap[c.avatar] || c.avatar || '/images/avatar_default.png'
-        }))
-      }
+      const comments = await app.fetchCommentsForShare(this.data.postId, sortBy)
+      const formatted = await this._formatCommentsForView(comments)
       this.setData({ comments: formatted })
     } catch (err) {
       wx.showToast({ title: '加载评论失败', icon: 'none' })
@@ -336,7 +457,11 @@ Page({
           inputPlaceholder: '说点什么吧...'
         })
         wx.showToast({ title: '评论成功', icon: 'none' })
-        this.loadPostData(this.data.postId)
+        const cur = this.data.post.comments
+        if (typeof cur === 'number' && !Number.isNaN(cur)) {
+          this.setData({ 'post.comments': cur + 1 })
+        }
+        await this.refreshCommentsOnly(this.data.postId)
       }
     } catch (err) {
       wx.showToast({ title: '评论发送失败，请重试', icon: 'none' })
@@ -347,26 +472,63 @@ Page({
 
   async onCommentLike(e) {
     const commentId = e.currentTarget.dataset.id
-    if (this._commentLikeBusy) return
+    if (!commentId) return
+    this._commentLikeBusyMap = this._commentLikeBusyMap || {}
+    if (this._commentLikeBusyMap[commentId]) return
     if (!app.requestComplianceForAction()) return
-    this._commentLikeBusy = true
+
+    const prevRow = (this.data.comments || []).find((c) => c._id === commentId)
+    const snapshot = prevRow
+      ? { likes: prevRow.likes || 0, isLiked: !!prevRow.isLiked }
+      : null
+
+    this._commentLikeBusyMap[commentId] = true
+    if (snapshot) {
+      const optimisticLiked = !snapshot.isLiked
+      const optimisticLikes = Math.max(0, snapshot.likes + (optimisticLiked ? 1 : -1))
+      const comments = this.data.comments.map((c) =>
+        (c._id !== commentId ? c : { ...c, isLiked: optimisticLiked, likes: optimisticLikes })
+      )
+      this.setData({ comments })
+    }
+
     try {
       const result = await app.toggleLikeComment(commentId)
-      if (result) {
-        const comments = this.data.comments.map(c => {
+      if (result && snapshot) {
+        let newLikes = snapshot.likes
+        if (result.isLiked && !snapshot.isLiked) newLikes = snapshot.likes + 1
+        else if (!result.isLiked && snapshot.isLiked) newLikes = Math.max(0, snapshot.likes - 1)
+        const comments = this.data.comments.map((c) =>
+          (c._id !== commentId ? c : { ...c, isLiked: result.isLiked, likes: newLikes })
+        )
+        this.setData({ comments })
+      } else if (result && !snapshot) {
+        const comments = this.data.comments.map((c) => {
           if (c._id !== commentId) return c
-          return {
-            ...c,
-            isLiked: result.isLiked,
-            likes: Math.max(0, (c.likes || 0) + (result.isLiked ? 1 : -1))
-          }
+          const base = c.likes || 0
+          const was = !!c.isLiked
+          let likes = base
+          if (result.isLiked && !was) likes = base + 1
+          else if (!result.isLiked && was) likes = Math.max(0, base - 1)
+          return { ...c, isLiked: result.isLiked, likes }
         })
+        this.setData({ comments })
+      } else if (snapshot) {
+        const comments = this.data.comments.map((c) =>
+          (c._id !== commentId ? c : { ...c, isLiked: snapshot.isLiked, likes: snapshot.likes })
+        )
         this.setData({ comments })
       }
     } catch (err) {
+      if (snapshot) {
+        const comments = this.data.comments.map((c) =>
+          (c._id !== commentId ? c : { ...c, isLiked: snapshot.isLiked, likes: snapshot.likes })
+        )
+        this.setData({ comments })
+      }
       wx.showToast({ title: '操作失败', icon: 'none' })
     } finally {
-      this._commentLikeBusy = false
+      delete this._commentLikeBusyMap[commentId]
     }
   },
 
@@ -422,9 +584,10 @@ Page({
   onShareTimeline() {
     const content = this.data.post.content || ''
     const title = content.length > 20 ? content.substring(0, 20) + '...' : (content || '校园便利盒')
+    const id = this.data.postId || (this.data.post && this.data.post._id) || ''
     return {
       title,
-      query: `id=${this.data.postId}`,
+      query: id ? `id=${encodeURIComponent(id)}` : '',
       imageUrl: this.data.shareImageUrl || '/images/icon_share.png'
     }
   }

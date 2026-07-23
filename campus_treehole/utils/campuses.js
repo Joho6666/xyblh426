@@ -51,6 +51,11 @@ const CAMPUSES = [
     keywords: ['桂旅', '桂林旅游学院', 'gltu', '旅游学院']
   },
   {
+    id: 'guilin-college',
+    name: '桂林学院',
+    keywords: ['桂林学院', '桂院', 'guilincollege', 'guilin-college']
+  },
+  {
     id: 'glnc',
     name: '桂林师范学院',
     keywords: ['桂林师院', '桂林师范学院', 'glnc', '师范']

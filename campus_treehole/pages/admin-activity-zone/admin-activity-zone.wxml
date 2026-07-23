@@ -1,0 +1,151 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">活动专区横幅</text>
+    <text class="hero-sub">横屏轮播（类似学习通首页），下方字段会在用户点击横幅后完整展示</text>
+  </view>
+
+  <view class="block">
+    <view class="row">
+      <text>启用横幅</text>
+      <switch checked="{{enabled}}" bindchange="onSwitchEnabled" />
+    </view>
+
+    <view class="act-status" wx:if="{{activityRunning}}">
+      <text class="act-status-line">本期进行中 · 参与帖 {{activePostCount}} 篇</text>
+      <text class="act-status-sub" wx:if="{{roundId}}">期次 {{roundId}}</text>
+    </view>
+    <view class="act-status act-status--muted" wx:elif="{{lastEndedAt}}">
+      <text class="act-status-line">上一期已于 {{lastEndedAt}} 结束</text>
+    </view>
+
+    <text class="label">自动结束时间（可选，到期后自动归档）</text>
+    <view class="end-at-row">
+      <picker mode="date" value="{{endAtDate}}" bindchange="onEndAtDateChange">
+        <view class="end-at-picker">{{endAtDate || '选择日期'}}</view>
+      </picker>
+      <picker mode="time" value="{{endAtTime}}" bindchange="onEndAtTimeChange">
+        <view class="end-at-picker">{{endAtTime || '23:59'}}</view>
+      </picker>
+      <text class="end-at-clear" catchtap="onClearEndAt">清除</text>
+    </view>
+
+    <text class="label">投放校区（可多选，与公告一致）</text>
+    <view class="campus-actions">
+      <text class="campus-count">已选 {{campusIds.length}} / {{campusOptions.length}}</text>
+      <view class="campus-action-btn" catchtap="onSelectAllCampuses">全选</view>
+      <view class="campus-action-btn" catchtap="onClearAllCampuses">清空</view>
+    </view>
+    <view class="campus-wrap">
+      <view
+        class="campus-chip {{item.selected ? 'campus-chip-on' : ''}}"
+        wx:for="{{campusOptions}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        catchtap="onToggleCampus"
+      >
+        <view class="campus-mark">{{item.selected ? '✓' : ''}}</view>
+        <view class="campus-name">{{item.name}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="block slide-block" wx:for="{{slides}}" wx:key="index">
+    <view class="slide-head">
+      <text class="slide-title">轮播 {{index + 1}}</text>
+      <text class="slide-del" catchtap="onRemoveSlide" data-index="{{index}}" wx:if="{{slides.length > 1}}">删除</text>
+    </view>
+
+    <view class="image-tools">
+      <view class="upload-btn" catchtap="onChooseSlideImage" data-index="{{index}}">+ 横幅图（建议横图）</view>
+      <text class="slide-uploading" wx:if="{{item.uploading}}">上传中…</text>
+    </view>
+    <view class="slide-preview" wx:if="{{item.previewUrl}}">
+      <image class="slide-img" src="{{item.previewUrl}}" mode="aspectFill" />
+    </view>
+
+    <view class="slide-fields">
+      <input
+        class="act-input"
+        placeholder="主标题（横幅大字）"
+        value="{{item.title}}"
+        data-index="{{index}}"
+        data-field="title"
+        bindinput="onSlideInput"
+        maxlength="80"
+      />
+      <input
+        class="act-input"
+        placeholder="副标题 / 一句话导语"
+        value="{{item.subtitle}}"
+        data-index="{{index}}"
+        data-field="subtitle"
+        bindinput="onSlideInput"
+        maxlength="120"
+      />
+      <textarea
+        class="act-textarea act-textarea--lg"
+        placeholder="活动内容（展开后展示）"
+        value="{{item.content}}"
+        data-index="{{index}}"
+        data-field="content"
+        bindinput="onSlideInput"
+        maxlength="2000"
+        auto-height
+        show-confirm-bar="{{false}}"
+      />
+      <input
+        class="act-input"
+        placeholder="活动时间"
+        value="{{item.activityTime}}"
+        data-index="{{index}}"
+        data-field="activityTime"
+        bindinput="onSlideInput"
+        maxlength="300"
+      />
+      <textarea
+        class="act-textarea"
+        placeholder="参与方式"
+        value="{{item.participation}}"
+        data-index="{{index}}"
+        data-field="participation"
+        bindinput="onSlideInput"
+        maxlength="800"
+        auto-height
+        show-confirm-bar="{{false}}"
+      />
+      <textarea
+        class="act-textarea"
+        placeholder="活动奖励"
+        value="{{item.rewards}}"
+        data-index="{{index}}"
+        data-field="rewards"
+        bindinput="onSlideInput"
+        maxlength="800"
+        auto-height
+        show-confirm-bar="{{false}}"
+      />
+      <input
+        class="act-input act-input--last"
+        placeholder="按钮文案（默认：了解详情）"
+        value="{{item.ctaText}}"
+        data-index="{{index}}"
+        data-field="ctaText"
+        bindinput="onSlideInput"
+        maxlength="16"
+      />
+    </view>
+  </view>
+
+  <view class="block">
+    <view class="add-slide" catchtap="onAddSlide" wx:if="{{slides.length < 10}}">+ 添加一张轮播（最多10张）</view>
+    <button class="btn" loading="{{saving}}" bindtap="onSave">保存配置</button>
+    <button class="btn btn-secondary" loading="{{saving}}" bindtap="onStartNewRoundSave" wx:if="{{!activityRunning}}">保存并开启新一期</button>
+    <button class="btn btn-danger" loading="{{ending}}" bindtap="onEndActivityZone" wx:if="{{activityRunning}}">结束本期活动</button>
+  </view>
+
+  <!-- 必须用旧版 canvas（勿加 type="2d"），否则 createCanvasContext / canvasToTempFilePath 不生效，裁图会失败 -->
+  <canvas
+    canvas-id="bannerCropCanvas"
+    style="position: fixed; left: -2000px; top: 0; width: 720px; height: 405px; opacity: 0; pointer-events: none;"
+  />
+</view>

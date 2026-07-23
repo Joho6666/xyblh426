@@ -35,6 +35,59 @@
 | 管理后台 | Web 管理端用于内容运营、公告、活动、数据看板 |
 | 云函数服务 | 登录、数据库操作、内容安全、通知推送、后台接口 |
 
+## 界面预览
+
+项目当前已经覆盖学生端主流程与管理端入口，下面是核心页面截图。
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/discover.jpg" alt="首页发现信息流" width="240">
+      <br>
+      <strong>首页发现</strong>
+      <br>
+      <sub>校区切换、公告入口、分类筛选与瀑布流内容展示</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/market.jpg" alt="校园集市" width="240">
+      <br>
+      <strong>校园集市</strong>
+      <br>
+      <sub>二手商品分类、搜索、商品卡片与发布入口</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/publish.jpg" alt="发布动态" width="240">
+      <br>
+      <strong>发布动态</strong>
+      <br>
+      <sub>树洞、求助、找搭子、校园生活等多频道发布</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/messages.jpg" alt="消息中心" width="240">
+      <br>
+      <strong>消息中心</strong>
+      <br>
+      <sub>私信会话、互动消息与服务通知状态</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/profile.jpg" alt="个人主页" width="240">
+      <br>
+      <strong>个人主页</strong>
+      <br>
+      <sub>资料展示、关注粉丝、发布内容与管理快捷入口</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/activity.jpg" alt="活动专区" width="240">
+      <br>
+      <strong>活动专区</strong>
+      <br>
+      <sub>活动横幅、活动动态搜索与空状态提示</sub>
+    </td>
+  </tr>
+</table>
+
 ## 技术架构
 
 ```text

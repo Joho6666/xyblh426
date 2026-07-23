@@ -5,6 +5,13 @@ const app = getApp()
 const feature = require('../../utils/feature.js')
 const POST_DRAFT_KEY = 'post_draft_v2'
 
+function clampPostCategoryIndex(raw, categoryList) {
+  const len = Array.isArray(categoryList) && categoryList.length ? categoryList.length : 1
+  const n = Number(raw)
+  const idx = Number.isFinite(n) ? Math.floor(n) : 0
+  return Math.max(0, Math.min(idx, len - 1))
+}
+
 Page({
   data: {
     allowPostVideo: feature.allowPostVideo,
@@ -24,6 +31,7 @@ Page({
       { name: '学术交流', icon: '/images/cat_study.png' },
       { name: '失物招领', icon: '/images/cat_emotion.png' },
       { name: '社团活动', icon: '/images/cat_help.png' },
+      { name: '校园活动', icon: '/images/cat_team.png' },
       { name: '其他', icon: '/images/cat_trade.png' }
     ],
     title: '',
@@ -59,8 +67,36 @@ Page({
       showEmojiPanel: false,
       selectedImages: this.data.selectedImages,
       selectedVideos: this.data.selectedVideos,
-      savedAt: Date.now()
+      savedAt: Date.now(),
+      serverEditedAt: this._serverEditedAt || 0
     }
+  },
+
+  _normalizeFileSig(arr) {
+    return (arr || []).map((item) => {
+      if (!item) return ''
+      return item.fileId || item.path || ''
+    }).filter(Boolean).join('|')
+  },
+
+  _draftMatchesServer(draft) {
+    if (!this._serverSnapshot) return false
+    const s = this._serverSnapshot
+    return (draft.title || '') === (s.title || '')
+      && (draft.content || '') === (s.content || '')
+      && Number(draft.currentCategory || 0) === Number(s.currentCategory || 0)
+      && this._normalizeFileSig(draft.selectedImages) === this._normalizeFileSig(s.selectedImages)
+      && this._normalizeFileSig(draft.selectedVideos) === this._normalizeFileSig(s.selectedVideos)
+  },
+
+  _draftMatchesCurrent() {
+    if (!this._serverSnapshot) return false
+    const s = this._serverSnapshot
+    return (this.data.title || '') === (s.title || '')
+      && (this.data.content || '') === (s.content || '')
+      && Number(this.data.currentCategory || 0) === Number(s.currentCategory || 0)
+      && this._normalizeFileSig(this.data.selectedImages) === this._normalizeFileSig(s.selectedImages)
+      && this._normalizeFileSig(this.data.selectedVideos) === this._normalizeFileSig(s.selectedVideos)
   },
 
   _hasDraftContent() {
@@ -268,12 +304,21 @@ Page({
   },
 
   onHide() {
-    if (!this.data.publishing) {
-      this.saveDraft({ silent: true })
+    if (this.data.publishing) return
+    if (this.data.editMode && this._draftMatchesCurrent()) {
+      wx.removeStorageSync(this.getDraftKey())
+      return
     }
+    this.saveDraft({ silent: true })
   },
 
   onUnload() {
+    // 退出页面前，若仍有未发布内容，保存为草稿，避免误触返回丢失编辑
+    if (!this.data.publishing) {
+      if (!(this.data.editMode && this._draftMatchesCurrent())) {
+        this.saveDraft({ silent: true })
+      }
+    }
     if (this.draftStatusTimer) {
       clearTimeout(this.draftStatusTimer)
       this.draftStatusTimer = null
@@ -281,22 +326,50 @@ Page({
   },
 
   // 上传图片到云存储
+  async _prepareUploadImage(localPath) {
+    if (!localPath || /^(https?:|cloud:\/\/)/.test(localPath)) return localPath
+    try {
+      const info = await wx.getImageInfo({ src: localPath })
+      const width = info && info.width ? Number(info.width) : 0
+      const height = info && info.height ? Number(info.height) : 0
+      const longSide = Math.max(width, height)
+      if (!longSide || longSide <= 1600) return localPath
+      const quality = longSide > 2200 ? 55 : 65
+      const res = await wx.compressImage({ src: localPath, quality })
+      return (res && res.tempFilePath) || localPath
+    } catch (err) {
+      return localPath
+    }
+  },
+
   async _uploadImages(imagePaths) {
-    const cloudPaths = []
-    for (let i = 0; i < imagePaths.length; i++) {
-      const ext = imagePaths[i].split('.').pop() || 'jpg'
-      const cloudPath = `posts/${Date.now()}_${i}.${ext}`
-      try {
-        const res = await wx.cloud.uploadFile({
-          cloudPath,
-          filePath: imagePaths[i]
-        })
-        cloudPaths.push(res.fileID)
-      } catch (err) {
-        console.error('图片上传失败:', err)
-        throw new Error(`第${i + 1}张图片上传失败`)
+    const n = imagePaths.length
+    if (n === 0) return []
+    const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+    const cloudPaths = new Array(n)
+    const concurrency = Math.min(3, n)
+    let cursor = 0
+    const worker = async () => {
+      while (true) {
+        const i = cursor++
+        if (i >= n) break
+        const uploadPath = await this._prepareUploadImage(imagePaths[i])
+        let ext = (imagePaths[i].split('.').pop() || 'jpg').split('?')[0].toLowerCase()
+        if (ext.length > 5 || !ALLOWED_EXTS.includes(ext)) ext = 'jpg'
+        const cloudPath = `posts/${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+        try {
+          const res = await wx.cloud.uploadFile({
+            cloudPath,
+            filePath: uploadPath
+          })
+          cloudPaths[i] = res.fileID
+        } catch (err) {
+          console.error('图片上传失败:', err)
+          throw new Error(`第${i + 1}张图片上传失败`)
+        }
       }
     }
+    await Promise.all(Array.from({ length: concurrency }, () => worker()))
     return cloudPaths
   },
 
@@ -319,22 +392,33 @@ Page({
   },
 
   async _uploadThumbImages(imagePaths) {
-    const cloudPaths = []
-    for (let i = 0; i < imagePaths.length; i++) {
-      const thumbPath = await this._makeImageThumb(imagePaths[i])
-      const ext = thumbPath.split('.').pop() || 'jpg'
-      const cloudPath = `posts/thumb_${Date.now()}_${i}.${ext}`
-      try {
-        const res = await wx.cloud.uploadFile({
-          cloudPath,
-          filePath: thumbPath
-        })
-        cloudPaths.push(res.fileID)
-      } catch (err) {
-        console.error('缩略图上传失败:', err)
-        cloudPaths.push('')
+    const n = imagePaths.length
+    if (n === 0) return []
+    const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+    const cloudPaths = new Array(n)
+    const concurrency = Math.min(3, n)
+    let cursor = 0
+    const worker = async () => {
+      while (true) {
+        const i = cursor++
+        if (i >= n) break
+        const thumbPath = await this._makeImageThumb(imagePaths[i])
+        let ext = (thumbPath.split('.').pop() || 'jpg').split('?')[0].toLowerCase()
+        if (ext.length > 5 || !ALLOWED_EXTS.includes(ext)) ext = 'jpg'
+        const cloudPath = `posts/thumb_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+        try {
+          const res = await wx.cloud.uploadFile({
+            cloudPath,
+            filePath: thumbPath
+          })
+          cloudPaths[i] = res.fileID
+        } catch (err) {
+          console.error('缩略图上传失败:', err)
+          cloudPaths[i] = ''
+        }
       }
     }
+    await Promise.all(Array.from({ length: concurrency }, () => worker()))
     return cloudPaths
   },
 
@@ -378,23 +462,36 @@ Page({
       ? await app.resolvePostMedia(post)
       : post
     const categoryIndex = this.data.categoryList.findIndex((item) => item.name === post.category)
+    const safeCategory = clampPostCategoryIndex(categoryIndex >= 0 ? categoryIndex : 0, this.data.categoryList)
+    const selectedImages = (resolvedPost.images || []).map((url, index) => ({
+      path: url,
+      fileId: (post.images || [])[index] || '',
+      thumbFileId: (post.thumbImages || [])[index] || '',
+      type: 'image'
+    }))
+    const selectedVideos = (resolvedPost.videos || []).map((url, index) => ({
+      path: url,
+      fileId: (post.videos || [])[index] || '',
+      thumbPath: '',
+      duration: 0
+    }))
 
-    this.setData({
+    this._serverSnapshot = {
       title: post.title || '',
       content: post.content || '',
-      currentCategory: categoryIndex >= 0 ? categoryIndex : 0,
-      selectedImages: (resolvedPost.images || []).map((url, index) => ({
-        path: url,
-        fileId: (post.images || [])[index] || '',
-        thumbFileId: (post.thumbImages || [])[index] || '',
-        type: 'image'
-      })),
-      selectedVideos: (resolvedPost.videos || []).map((url, index) => ({
-        path: url,
-        fileId: (post.videos || [])[index] || '',
-        thumbPath: '',
-        duration: 0
-      }))
+      currentCategory: safeCategory,
+      selectedImages,
+      selectedVideos
+    }
+    const editedAtRaw = post.editedAt || post.updateTime || post.lastEditTime || post.modifyTime || 0
+    this._serverEditedAt = Number(new Date(editedAtRaw).getTime() || 0)
+
+    this.setData({
+      title: this._serverSnapshot.title,
+      content: this._serverSnapshot.content,
+      currentCategory: safeCategory,
+      selectedImages,
+      selectedVideos
     })
   },
 
@@ -402,6 +499,35 @@ Page({
     const draft = wx.getStorageSync(this.getDraftKey())
     if (!draft) return
 
+    if (this.data.editMode) {
+      if (this._draftMatchesServer(draft)) {
+        wx.removeStorageSync(this.getDraftKey())
+        return
+      }
+      const draftServerEditedAt = Number(draft.serverEditedAt || 0)
+      if (this._serverEditedAt && draftServerEditedAt && draftServerEditedAt < this._serverEditedAt) {
+        wx.showModal({
+          title: '编辑稿已过期',
+          content: '服务器上的帖子已被更新，本地草稿可能与最新内容不符。建议放弃旧草稿，使用最新服务器内容编辑。',
+          cancelText: '保留草稿',
+          confirmText: '放弃草稿',
+          confirmColor: '#426089',
+          success: (res) => {
+            if (res.confirm) {
+              wx.removeStorageSync(this.getDraftKey())
+            } else {
+              this._promptRestoreDraft(draft)
+            }
+          }
+        })
+        return
+      }
+    }
+
+    this._promptRestoreDraft(draft)
+  },
+
+  _promptRestoreDraft(draft) {
     const modalTitle = this.data.editMode ? '发现编辑草稿' : '发现草稿'
     const modalContent = this.data.editMode
       ? '是否恢复上次未保存的编辑内容？'
@@ -421,7 +547,7 @@ Page({
           this.setData({
             title: draft.title || '',
             content: draft.content || '',
-            currentCategory: draft.currentCategory || 0,
+            currentCategory: clampPostCategoryIndex(draft.currentCategory, this.data.categoryList),
             selectedImages: validImages,
             selectedVideos: validVideos
           })
@@ -506,42 +632,26 @@ Page({
       return
     }
 
-    // 图片/视频本地安全检测
-    const imagePaths = this.data.selectedImages.filter((img) => !img.fileId).map(img => img.path)
-    const videoPaths = this.data.canPostVideo
-      ? this.data.selectedVideos.filter((v) => !v.fileId).map(v => v.path)
-      : []
-
-    if (imagePaths.length > 0 || videoPaths.length > 0) {
-      wx.showLoading({ title: '内容审核中...', mask: true })
-      try {
-        const mediaResult = await app.checkAllMedia(imagePaths, videoPaths)
-        wx.hideLoading()
-        if (!mediaResult.pass) {
-          wx.showModal({
-            title: '媒体审核未通过',
-            content: mediaResult.errMsg,
-            showCancel: false, confirmColor: '#426089'
-          })
-          return
-        }
-      } catch (err) {
-        wx.hideLoading()
-        console.warn('媒体审核异常，降级放行:', err)
-      }
-    }
-
     this.setData({ publishing: true })
-    wx.showLoading({ title: this.data.editMode ? '保存中...' : '发布中...', mask: true })
+    // 图片安全仅服务端审一次；与发帖页一致，避免临时上传+contentCheck 再正式上传的双倍耗时
+    wx.showLoading({ title: '上传媒体...', mask: true })
 
     try {
-      const cloudImages = await this._prepareImageFileIds()
-      const cloudThumbImages = await this._prepareThumbImageFileIds()
-      const cloudVideos =
-        this.data.canPostVideo || (this.data.editMode && this.data.selectedVideos.length === 0)
-          ? await this._prepareVideoFileIds()
-          : []
-      const categoryName = this.data.categoryList[this.data.currentCategory].name
+      const videoTask = (this.data.canPostVideo || (this.data.editMode && this.data.selectedVideos.length === 0))
+        ? this._prepareVideoFileIds()
+        : Promise.resolve([])
+      const [mediaBundle, cloudVideos] = await Promise.all([
+        (async () => {
+          const cloudImages = await this._prepareImageFileIds()
+          const cloudThumbImages = await this._prepareThumbImageFileIds()
+          return { cloudImages, cloudThumbImages }
+        })(),
+        videoTask
+      ])
+      const { cloudImages, cloudThumbImages } = mediaBundle
+      wx.showLoading({ title: this.data.editMode ? '保存中...' : '发布中...', mask: true })
+      const catIdx = clampPostCategoryIndex(this.data.currentCategory, this.data.categoryList)
+      const categoryName = this.data.categoryList[catIdx].name
       const payload = {
         title: this.data.title,
         content: this.data.content,
@@ -559,6 +669,9 @@ Page({
       if (result) {
         app.globalData.indexFeedNeedsRefresh = true
         app.globalData.mineNeedsRefresh = true
+        if (this.data.editMode && this.data.editingPostId && typeof app.markDetailNeedsRefresh === 'function') {
+          app.markDetailNeedsRefresh(this.data.editingPostId)
+        }
         wx.removeStorageSync(this.getDraftKey())
         this.setData({
           title: '', content: '', selectedImages: [], selectedVideos: [],

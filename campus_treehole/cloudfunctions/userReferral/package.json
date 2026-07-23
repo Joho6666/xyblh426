@@ -1,0 +1,9 @@
+{
+  "name": "userReferral",
+  "version": "1.0.0",
+  "description": "用户互推：绑定邀请关系、统计、生成太阳码",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

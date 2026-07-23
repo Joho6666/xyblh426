@@ -29,6 +29,27 @@ function formatInteractionText(item) {
   }
 }
 
+function conversationsSignature(list) {
+  return (list || []).map((c) => [
+    c._id || c.targetOpenid || '',
+    c.lastMessageId || '',
+    c.lastTime || '',
+    c.unreadCount || 0,
+    c.lastContent || '',
+    c.targetAvatar || ''
+  ].join('|')).join('~')
+}
+
+function interactionsSignature(list) {
+  return (list || []).map((item) => [
+    item._id || '',
+    item.isRead ? '1' : '0',
+    item.createTime || '',
+    item.actorAvatar || '',
+    item.itemImage || ''
+  ].join('|')).join('~')
+}
+
 function formatInteractionTypeLabel(type) {
   switch (type) {
     case 'post_comment':
@@ -62,7 +83,9 @@ Page({
     loadError: '',
     interactionLoadError: '',
     loading: false,
-    interactionLoading: false
+    interactionLoading: false,
+    notifyEnabled: false,
+    isRefreshing: false
   },
 
   onShow() {
@@ -91,8 +114,17 @@ Page({
   },
 
   bootstrapMessagePage() {
+    const u = app.globalData.userInfo || {}
+    this.setData({ notifyEnabled: !!u.notifyEnabled })
     this.loadAllData()
     this.startRefreshTimer()
+  },
+
+  async onEnableNotifyTap() {
+    const res = await app.enableSubscribeNotificationsFromClient()
+    if (res && res.ok) {
+      this.setData({ notifyEnabled: true })
+    }
   },
 
   startRefreshTimer() {
@@ -140,6 +172,13 @@ Page({
     }
     try {
       const conversations = await app.getConversationList()
+      const sig = conversationsSignature(conversations)
+      this._lastConversationFetchAt = Date.now()
+      // 静默刷新时若服务器内容没变，直接复用旧数据，不再重新解析头像和重绘
+      if (silent && sig === this._lastConversationsSig) {
+        if (this.data.loading) this.setData({ loading: false })
+        return this.data.totalUnread || 0
+      }
       const avatarMap = await app.resolveFileUrlsMap(conversations.map(item => item.targetAvatar))
       const formatted = conversations.map((c, index) => ({
         ...c,
@@ -150,7 +189,7 @@ Page({
       }))
       const totalUnread = formatted.reduce((sum, item) => sum + (item.unreadCount || 0), 0)
       this.setData({ conversations: formatted, totalUnread, loading: false })
-      this._lastConversationFetchAt = Date.now()
+      this._lastConversationsSig = sig
       return totalUnread
     } catch (err) {
       this.setData({ loading: false, loadError: '私信加载失败' })
@@ -166,6 +205,15 @@ Page({
     }
     try {
       const list = await app.getInteractionNotifications()
+      const sig = interactionsSignature(list)
+      this._lastInteractionFetchAt = Date.now()
+
+      // 静默且服务器无变化时跳过头像解析与重绘；但若需要标记已读，仍要继续
+      if (silent && !autoMarkRead && sig === this._lastInteractionsSig) {
+        if (this.data.interactionLoading) this.setData({ interactionLoading: false })
+        return this.data.interactionUnread || 0
+      }
+
       const avatarMap = await app.resolveFileUrlsMap(list.map(item => item.actorAvatar).concat(list.map(item => item.itemImage)))
       const formatted = list.map((item) => ({
         ...item,
@@ -182,6 +230,7 @@ Page({
         interactionUnread,
         interactionLoading: false
       })
+      this._lastInteractionsSig = sig
 
       if (autoMarkRead && formatted.length > 0) {
         const unreadIds = formatted.filter(item => !item.isRead).map(item => item._id)
@@ -189,13 +238,14 @@ Page({
           await app.markInteractionNotificationsRead(unreadIds)
           app.invalidateCacheByPrefix('unread:')
           finalInteractionUnread = 0
+          const readList = formatted.map(item => ({ ...item, isRead: true }))
           this.setData({
             interactionUnread: 0,
-            interactions: formatted.map(item => ({ ...item, isRead: true }))
+            interactions: readList
           })
+          this._lastInteractionsSig = interactionsSignature(readList)
         }
       }
-      this._lastInteractionFetchAt = Date.now()
       return finalInteractionUnread
     } catch (err) {
       this.setData({ interactionLoading: false, interactionLoadError: '互动消息加载失败' })
@@ -224,9 +274,10 @@ Page({
 
   onChatTap(e) {
     const openid = e.currentTarget.dataset.openid
+    if (!openid) return
     const nickname = e.currentTarget.dataset.nickname || ''
     wx.navigateTo({
-      url: `/pages/chat/chat?openid=${openid}&nickname=${encodeURIComponent(nickname)}`
+      url: `/pages/chat/chat?openid=${encodeURIComponent(openid)}&nickname=${encodeURIComponent(nickname)}`
     })
   },
 
@@ -234,19 +285,19 @@ Page({
     const { targetType, targetId, postId, goodsId, fromOpenid } = e.currentTarget.dataset
     if (!targetType) return
     if (targetType === 'user' && fromOpenid) {
-      wx.navigateTo({ url: `/pages/profile/profile?openid=${fromOpenid}` })
+      wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(fromOpenid)}` })
       return
     }
     if (targetType === 'goods' && (goodsId || targetId)) {
-      wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${goodsId || targetId}` })
+      wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(goodsId || targetId)}` })
       return
     }
     if (targetType === 'comment' && postId) {
-      wx.navigateTo({ url: `/pages/detail/detail?id=${postId}` })
+      wx.navigateTo({ url: `/pages/detail/detail?id=${encodeURIComponent(postId)}` })
       return
     }
     if (targetType === 'post' && (postId || targetId)) {
-      wx.navigateTo({ url: `/pages/detail/detail?id=${postId || targetId}` })
+      wx.navigateTo({ url: `/pages/detail/detail?id=${encodeURIComponent(postId || targetId)}` })
     }
   },
 
@@ -264,6 +315,14 @@ Page({
       .finally(() => {
         wx.stopPullDownRefresh()
         wx.hideLoading()
+      })
+  },
+
+  onRefresherRefresh() {
+    this.setData({ isRefreshing: true })
+    this.loadAllData({ silent: true })
+      .finally(() => {
+        this.setData({ isRefreshing: false })
       })
   }
 })

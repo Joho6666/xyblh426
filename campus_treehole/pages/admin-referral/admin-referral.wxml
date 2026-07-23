@@ -1,6 +1,44 @@
 <view class="page">
-  <view class="tip" wx:if="{{!loading && list.length === 0}}">
-    <text>暂无员工数据。请在云开发数据库新建集合 employees，并添加文档（empId、name、inviteCode、status 等）。</text>
+  <view class="toolbar">
+    <button class="btn-add" type="primary" size="mini" bindtap="onTapAdd">添加员工</button>
+    <text class="toolbar-hint">仅管理员可操作；员工编号创建后不可改。</text>
+  </view>
+
+  <view class="form-card" wx:if="{{formVisible}}">
+    <view class="form-title">{{isNewForm ? '添加员工' : '编辑员工'}}</view>
+    <view class="form-row">
+      <text class="form-label">员工编号</text>
+      <input
+        class="form-input"
+        value="{{formEmpId}}"
+        disabled="{{!isNewForm}}"
+        placeholder="如 emp_004"
+        maxlength="32"
+        bindinput="onFormEmpId"
+      />
+    </view>
+    <view class="form-row">
+      <text class="form-label">姓名</text>
+      <input class="form-input" value="{{formName}}" placeholder="推广员姓名" maxlength="40" bindinput="onFormName" />
+    </view>
+    <view class="form-row">
+      <text class="form-label">邀请码</text>
+      <input class="form-input" value="{{formInviteCode}}" placeholder="可选" maxlength="32" bindinput="onFormInviteCode" />
+    </view>
+    <view class="form-row picker-row">
+      <text class="form-label">状态</text>
+      <picker mode="selector" range="{{statusLabels}}" value="{{formStatusIndex}}" bindchange="onStatusPick">
+        <view class="picker-val">{{statusLabels[formStatusIndex]}}</view>
+      </picker>
+    </view>
+    <view class="form-actions">
+      <button class="form-btn" type="primary" size="mini" loading="{{saving}}" bindtap="onSaveEmployee">保存</button>
+      <button class="form-btn" size="mini" bindtap="onCancelForm" disabled="{{saving}}">取消</button>
+    </view>
+  </view>
+
+  <view class="tip" wx:if="{{!loading && list.length === 0 && !formVisible}}">
+    <text>暂无员工。点击上方「添加员工」创建；或稍后在云数据库 employees 中维护。</text>
   </view>
 
   <view class="loading" wx:if="{{loading}}">加载中…</view>
@@ -21,14 +59,23 @@
       <image class="qr" src="{{item.qrcodeDisplayUrl}}" mode="aspectFit" show-menu-by-longpress />
     </view>
     <view class="qr-missing" wx:else><text>尚未生成小程序码</text></view>
-    <button
-      class="btn-gen"
-      size="mini"
-      type="default"
-      loading="{{generatingEmpId === item.empId}}"
-      disabled="{{generatingEmpId !== ''}}"
-      data-empid="{{item.empId}}"
-      bindtap="onGenerateQr"
-    >生成/更新太阳码</button>
+    <view class="card-actions">
+      <button
+        class="btn-edit"
+        size="mini"
+        type="default"
+        data-empid="{{item.empId}}"
+        bindtap="onTapEdit"
+      >编辑资料</button>
+      <button
+        class="btn-gen"
+        size="mini"
+        type="default"
+        loading="{{generatingEmpId === item.empId}}"
+        disabled="{{generatingEmpId !== ''}}"
+        data-empid="{{item.empId}}"
+        bindtap="onGenerateQr"
+      >生成/更新太阳码</button>
+    </view>
   </view>
 </view>

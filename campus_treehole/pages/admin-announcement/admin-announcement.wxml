@@ -1,0 +1,81 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">公告管理</text>
+    <text class="hero-sub">按校区精准发布，支持图片公告</text>
+  </view>
+
+  <view class="block">
+    <text class="h1">发布公告</text>
+    <input class="input title-input" placeholder="请输入公告标题（必填）" value="{{title}}" data-field="title" bindinput="onInput" maxlength="40" />
+    <textarea class="textarea" placeholder="请输入公告内容（必填）" value="{{content}}" data-field="content" bindinput="onInput" maxlength="500" />
+
+    <view class="image-tools">
+      <view class="upload-btn" bindtap="onChooseImages">+ 添加图片（最多10张）</view>
+      <text class="upload-hint">支持 jpg/png/webp</text>
+    </view>
+    <scroll-view class="image-scroll" scroll-x wx:if="{{selectedImages.length}}">
+      <view class="image-track">
+        <view class="img-card" wx:for="{{selectedImages}}" wx:key="path">
+          <image class="img" src="{{item.path}}" mode="aspectFill"></image>
+          <view class="img-del" bindtap="onRemoveImage" data-index="{{index}}">×</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="row">
+      <text>优先级</text>
+      <picker mode="selector" range="{{['普通','重要','紧急']}}" bindchange="onPickPriority">
+        <text class="picker">{{priority}}</text>
+      </picker>
+    </view>
+    <view class="row">
+      <text>置顶</text>
+      <switch checked="{{pinTop}}" bindchange="onSwitchPin" />
+    </view>
+    <view class="row">
+      <text>发布后推送通知</text>
+      <switch checked="{{sendNotify}}" bindchange="onSwitchNotify" />
+    </view>
+
+    <text class="label">投放校区（可多选）</text>
+    <view class="campus-actions">
+      <text class="campus-count">已选 {{campusIds.length}} / {{campusOptions.length}}</text>
+      <view class="campus-action-btn" catchtap="onSelectAllCampuses">全选</view>
+      <view class="campus-action-btn" catchtap="onClearAllCampuses">清空</view>
+    </view>
+    <view class="campus-wrap">
+      <view
+        class="campus-chip {{item.selected ? 'campus-chip-on' : ''}}"
+        wx:for="{{campusOptions}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        catchtap="onToggleCampus"
+        hover-class="campus-chip-hover"
+        hover-stay-time="80"
+      >
+        <view class="campus-mark">{{item.selected ? '✓' : ''}}</view>
+        <view class="campus-name">{{item.name}}</view>
+      </view>
+    </view>
+
+    <button class="btn" loading="{{creating}}" bindtap="onSubmit">创建并发布</button>
+  </view>
+
+  <view class="block">
+    <text class="h1">已发布公告</text>
+    <view class="item" wx:for="{{list}}" wx:key="_id">
+      <view class="item-top">
+        <text class="title">{{item.title}}</text>
+        <text class="status">{{item.status}}</text>
+      </view>
+      <image class="list-cover" wx:if="{{item.images && item.images.length}}" src="{{item.images[0]}}" mode="aspectFill"></image>
+      <text class="meta">阅读 {{item.readCount || 0}} / 目标 {{item.targetCount || 0}}</text>
+      <text class="campus-meta">投放校区：{{item._campusText}}</text>
+      <view class="card-actions">
+        <button size="mini" bindtap="onEditAnnouncement" data-id="{{item._id}}">编辑</button>
+        <button size="mini" type="warn" bindtap="onRevoke" data-id="{{item._id}}" wx:if="{{item.status === 'published'}}">撤回</button>
+      </view>
+    </view>
+    <view class="loading" wx:if="{{loading}}">加载中...</view>
+  </view>
+</view>

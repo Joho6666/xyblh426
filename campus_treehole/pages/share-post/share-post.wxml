@@ -1,0 +1,49 @@
+<view class="share-page">
+  <view class="share-section" wx:if="{{shareAuthorCard}}">
+    <view class="section-title">帖子作者</view>
+    <view class="user-card" bindtap="onShareTargetTap" data-openid="{{shareAuthorCard._openid}}" data-nickname="{{shareAuthorCard.nickName}}">
+      <image class="avatar" src="{{shareAuthorCard.avatarUrl}}" mode="aspectFill"></image>
+      <view class="user-info">
+        <text class="nickname">{{shareAuthorCard.nickName}}</text>
+        <text class="meta">优先私信作者</text>
+      </view>
+      <view class="send-btn">发送</view>
+    </view>
+  </view>
+
+  <view class="share-section">
+    <view class="section-title">私信列表</view>
+    <view class="search-bar">
+      <image class="search-icon" src="/images/icon_search.png" mode="aspectFit"></image>
+      <input
+        class="search-input"
+        placeholder="搜索私信联系人..."
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+      />
+      <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">清除</view>
+    </view>
+
+    <view class="loading-tip" wx:if="{{loading}}">加载中...</view>
+    <view class="empty-tip" wx:elif="{{filteredChatList.length === 0}}">
+      <text>暂无可分享对象</text>
+      <text class="empty-sub">先和同学私信后，才会出现在这里</text>
+    </view>
+
+    <view
+      class="user-card"
+      wx:for="{{filteredChatList}}"
+      wx:key="_openid"
+      bindtap="onShareTargetTap"
+      data-openid="{{item._openid}}"
+      data-nickname="{{item.nickName}}"
+    >
+      <image class="avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+      <view class="user-info">
+        <text class="nickname">{{item.nickName}}</text>
+        <text class="meta">{{item.college}}</text>
+      </view>
+      <view class="send-btn">发送</view>
+    </view>
+  </view>
+</view>

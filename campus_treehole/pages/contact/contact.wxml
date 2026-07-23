@@ -1,0 +1,7 @@
+<view class="contact-page">
+  <view class="contact-card">
+    <text class="contact-title">联系客服</text>
+    <image class="contact-qr" src="{{qrSrc}}" mode="widthFix"></image>
+    <text class="contact-note">联系客服提出建议，以及活动售后</text>
+  </view>
+</view>

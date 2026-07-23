@@ -1,4 +1,5 @@
 {
+  "description": "请用本文件夹 stitch_mvp 作为微信开发者工具的项目根目录打开；云函数在 campus_treehole/cloudfunctions。勿单独以 campus_treehole 为根打开，否则 cloudfunctionRoot 会错位、上传云函数易失败。",
   "miniprogramRoot": "campus_treehole/",
   "cloudfunctionRoot": "campus_treehole/cloudfunctions/",
   "setting": {
@@ -23,7 +24,8 @@
     "disableUseStrict": false,
     "condition": false,
     "swc": false,
-    "disableSWC": true
+    "disableSWC": true,
+    "useIsolateContext": true
   },
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},

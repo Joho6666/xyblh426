@@ -1,5 +1,6 @@
 // pages/market-post/market-post.js - 发布闲置商品
 const app = getApp()
+const { MARKET_PUBLISH_CATEGORIES, normalizePublishCategory } = require('../../utils/marketCategories')
 const MARKET_DRAFT_KEY = 'market_post_draft_v1'
 
 Page({
@@ -16,22 +17,7 @@ Page({
     publishing: false,
     showCategoryPicker: false,
     draftStatus: '',
-    categoryList: [
-      { name: '书籍', icon: '📚' },
-      { name: '手机数码', icon: '📱' },
-      { name: '电器', icon: '🔌' },
-      { name: '生活用品', icon: '🧴' },
-      { name: '美妆', icon: '💄' },
-      { name: '男装', icon: '👔' },
-      { name: '女装', icon: '👗' },
-      { name: '医药', icon: '💊' },
-      { name: '玩乐', icon: '🎮' },
-      { name: '车品', icon: '🚗' },
-      { name: '技能服务', icon: '🛠️' },
-      { name: '虚拟产品', icon: '💎' },
-      { name: '餐饮', icon: '🍔' },
-      { name: '其他', icon: '📦' }
-    ]
+    categoryList: MARKET_PUBLISH_CATEGORIES
   },
 
   _buildDraftPayload() {
@@ -89,6 +75,23 @@ Page({
     return true
   },
 
+  _filterValidDraftImages(images) {
+    const fs = wx.getFileSystemManager()
+    return (images || []).filter((item) => {
+      if (!item) return false
+      if (item.fileId) return true
+      const filePath = item.path
+      if (!filePath) return false
+      if (/^(https?:|cloud:\/\/)/.test(filePath)) return true
+      try {
+        fs.accessSync(filePath)
+        return true
+      } catch (e) {
+        return false
+      }
+    })
+  },
+
   onLoad() {
     const draft = wx.getStorageSync(MARKET_DRAFT_KEY)
     if (!draft) return
@@ -98,18 +101,24 @@ Page({
       confirmColor: '#ff2442',
       success: (res) => {
         if (res.confirm) {
+          const validImages = this._filterValidDraftImages(draft.selectedImages)
+          const lostCount = (draft.selectedImages || []).length - validImages.length
           this.setData({
-            selectedImages: draft.selectedImages || [],
+            selectedImages: validImages,
             title: draft.title || '',
             description: draft.description || '',
             price: draft.price || '',
             originalPrice: draft.originalPrice || '',
-            selectedCategory: draft.selectedCategory || '',
+            selectedCategory: normalizePublishCategory(draft.selectedCategory || ''),
             condition: draft.condition || '',
             tradeMethod: draft.tradeMethod || '',
             bargain: draft.bargain !== undefined ? draft.bargain : null
           })
-          this._setDraftStatus('已恢复上次草稿')
+          if (lostCount > 0) {
+            this._setDraftStatus(`已恢复草稿（${lostCount}张图片已过期）`)
+          } else {
+            this._setDraftStatus('已恢复上次草稿')
+          }
         } else {
           wx.removeStorageSync(MARKET_DRAFT_KEY)
         }
@@ -175,17 +184,43 @@ Page({
   },
 
   // 上传图片到云存储
+  async _compressImageIfNeeded(filePath) {
+    try {
+      const info = await wx.getImageInfo({ src: filePath })
+      const width = info && info.width ? Number(info.width) : 0
+      const height = info && info.height ? Number(info.height) : 0
+      const longSide = Math.max(width, height)
+      if (!longSide || longSide <= 1600) return filePath
+      const quality = longSide > 2200 ? 55 : 65
+      const compressed = await wx.compressImage({ src: filePath, quality })
+      return (compressed && compressed.tempFilePath) || filePath
+    } catch (e) {
+      return filePath
+    }
+  },
+
   async _uploadImages(imagePaths) {
     const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
-    const cloudPaths = []
-    for (let i = 0; i < imagePaths.length; i++) {
-      let ext = (imagePaths[i].split('.').pop() || 'jpg').split('?')[0].toLowerCase()
+    const stamp = Date.now()
+    const tasks = imagePaths.map(async (rawPath, i) => {
+      const uploadPath = await this._compressImageIfNeeded(rawPath)
+      let ext = (rawPath.split('.').pop() || 'jpg').split('?')[0].toLowerCase()
       if (ext.length > 5 || !ALLOWED_EXTS.includes(ext)) ext = 'jpg'
-      const cloudPath = `market/${Date.now()}_${i}.${ext}`
-      const res = await wx.cloud.uploadFile({ cloudPath, filePath: imagePaths[i] })
-      cloudPaths.push(res.fileID)
-    }
-    return cloudPaths
+      const cloudPath = `market/${stamp}_${i}_${Math.random().toString(36).slice(2, 9)}.${ext}`
+      try {
+        const res = await wx.cloud.uploadFile({ cloudPath, filePath: uploadPath })
+        if (!res || !res.fileID) {
+          throw new Error(`第${i + 1}张图片上传失败`)
+        }
+        return { i, fileID: res.fileID }
+      } catch (err) {
+        console.error(`[market-post] 图片 ${i + 1} 上传失败:`, err)
+        throw new Error(`第${i + 1}张图片上传失败，请检查网络后重试`)
+      }
+    })
+    const rows = await Promise.all(tasks)
+    rows.sort((a, b) => a.i - b.i)
+    return rows.map((r) => r.fileID)
   },
 
   // 发布
@@ -225,34 +260,25 @@ Page({
     }
 
     this.setData({ publishing: true })
-    wx.showLoading({ title: '发布中...', mask: true })
+    wx.showLoading({ title: '上传图片...', mask: true })
 
     try {
       const imagePaths = this.data.selectedImages.map(i => i.path)
-      const mediaCheck = await app.checkAllMedia(imagePaths, [])
-      if (!mediaCheck.pass) {
-        wx.hideLoading()
-        this.setData({ publishing: false })
-        wx.showModal({
-          title: '图片审核未通过',
-          content: mediaCheck.errMsg || '图片包含不合规内容',
-          showCancel: false,
-          confirmColor: '#426089'
-        })
-        return
-      }
+      // 图片安全仅由 addMarketGoods 内 wxImageBatchCheck 执行一次，避免此前「临时上传+contentCheck」再正式上传的双倍耗时
       const cloudImages = await this._uploadImages(imagePaths)
 
+      wx.showLoading({ title: '审核并发布...', mask: true })
       const result = await app.callDB('addMarketGoods', {
         title: this.data.title,
         description: this.data.description,
         price: parseFloat(this.data.price),
         originalPrice: this.data.originalPrice ? parseFloat(this.data.originalPrice) : null,
         images: cloudImages,
-        category: this.data.selectedCategory,
+        category: normalizePublishCategory(this.data.selectedCategory),
         condition: this.data.condition || '未说明',
         tradeMethod: this.data.tradeMethod || '均可',
-        bargain: this.data.bargain !== null ? this.data.bargain : true
+        bargain: this.data.bargain !== null ? this.data.bargain : true,
+        campusId: app.getSelectedCampusId()
       })
 
       wx.hideLoading()

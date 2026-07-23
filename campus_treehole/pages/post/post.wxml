@@ -19,12 +19,13 @@
   <!-- 分类网格 - 4列 -->
   <view class="category-grid">
     <view
-      class="category-item {{currentCategory === index ? 'category-item-active' : ''}}"
+      class="category-item {{currentCategory === index ? 'category-item-active' : ''}} {{item.name === '校园活动' ? 'category-item-spotlight' : ''}}"
       wx:for="{{categoryList}}"
       wx:key="index"
       bindtap="onSelectCategory"
       data-index="{{index}}"
     >
+      <view wx:if="{{item.name === '校园活动'}}" class="category-sparkle" />
       <image class="category-icon" src="{{item.icon}}" mode="aspectFit"></image>
       <text class="category-name">{{item.name}}</text>
     </view>

@@ -1,6 +1,8 @@
 {
   "navigationBarTitleText": "关注与粉丝",
-  "usingComponents": {},
+  "usingComponents": {
+    "discover-search-bar": "/components/discover-search-bar/discover-search-bar"
+  },
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

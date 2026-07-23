@@ -1,22 +1,30 @@
-<!-- pages/mine/mine.wxml - 我的页面 -->
 <view class="mine-page">
-  <!-- 与主页 profile 同步的封面 + 头像区 -->
   <view class="mine-cover-wrap">
-    <image wx:if="{{userInfo.coverImage}}" class="mine-cover-bg" src="{{userInfo.coverImage}}" mode="aspectFill"></image>
-    <view class="mine-cover-overlay"></view>
-    <view class="profile-section">
-      <view class="avatar-wrapper" bindtap="onChangeAvatar">
-        <view class="avatar-glow"></view>
-        <view class="profile-avatar">
-          <image src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
-        </view>
-        <view class="avatar-edit-tip">📷</view>
+    <image wx:if="{{userInfo.coverImage}}" class="mine-cover-bg" src="{{userInfo.coverImage}}" mode="aspectFill" bindtap="onChangeCover"></image>
+    <view class="mine-cover-overlay" bindtap="onChangeCover"></view>
+
+    <view class="top-action-row">
+      <view class="top-action-right">
+        <view class="top-action-ico" bindtap="onViewMyProfile">↗</view>
       </view>
-      <text class="profile-name" bindtap="onEditNickname">{{userInfo.nickName}} ✏️</text>
-      <text class="profile-uid">ID: {{userInfo.numericId || '未分配'}}</text>
-      <view class="profile-badge">
-        <image class="badge-icon" src="/images/icon_verified.png" mode="aspectFit"></image>
-        <text class="badge-text">{{userInfo.college}}</text>
+    </view>
+
+    <view class="profile-section">
+      <view class="profile-main">
+        <view class="avatar-wrapper" bindtap="onChangeAvatar">
+          <view class="avatar-glow"></view>
+          <view class="profile-avatar">
+            <image src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+          </view>
+        </view>
+        <view class="profile-meta" bindtap="onChangeCover">
+          <view class="name-row">
+            <text class="profile-name" catchtap="onEditNickname">{{userInfo.nickName || '未设置昵称'}}</text>
+            <text class="profile-edit" catchtap="onEditNickname">✎</text>
+          </view>
+          <text class="profile-uid profile-uid-copy" catchtap="onCopyUserId">ID：{{userInfo.numericId || '未分配'}}</text>
+          <text class="profile-ip">IP：{{userInfo.college || '未设置校区'}}</text>
+        </view>
       </view>
       <text class="profile-bio" wx:if="{{userInfo.bio}}">{{userInfo.bio}}</text>
       <view class="profile-tags" wx:if="{{userInfo.tags && userInfo.tags.length > 0}}">
@@ -26,31 +34,42 @@
   </view>
 
   <view class="page-container">
-  <!-- 统计数据卡片 -->
-  <view class="stats-grid">
-    <view class="stats-card" bindtap="onStatsTap" data-type="posts">
-      <text class="stats-number">{{postCount}}</text>
-      <text class="stats-label">发布</text>
-    </view>
-    <view class="stats-card" bindtap="onStatsTap" data-type="likes">
-      <text class="stats-number">{{totalLikes}}</text>
-      <text class="stats-label">获赞</text>
-    </view>
-    <view class="stats-card" bindtap="onFollowingTap">
+  <view class="stats-inline">
+    <view class="stats-item" bindtap="onFollowingTap">
       <text class="stats-number">{{followingCount}}</text>
       <text class="stats-label">关注</text>
     </view>
-    <view class="stats-card" bindtap="onFollowerTap">
+    <view class="stats-item" bindtap="onFollowerTap">
       <text class="stats-number">{{followerCount}}</text>
       <text class="stats-label">粉丝</text>
     </view>
+    <view class="stats-item" bindtap="onStatsTap" data-type="likes">
+      <text class="stats-number">{{totalLikes}}</text>
+      <text class="stats-label">获赞与收藏</text>
+    </view>
   </view>
 
-  <!-- Tab 切换栏 -->
+  <view class="quick-grid">
+    <view class="quick-card" bindtap="onMenuTap" data-page="editProfile">
+      <text class="quick-title">编辑资料</text>
+      <text class="quick-sub">完善主页信息</text>
+    </view>
+    <view class="quick-card" bindtap="onMenuTap" data-page="searchUser">
+      <text class="quick-title">群聊</text>
+      <text class="quick-sub">查看并搜索用户</text>
+    </view>
+    <view class="quick-card" bindtap="onMenuTap" data-page="blockedUsers">
+      <text class="quick-title">黑名单</text>
+      <text class="quick-sub">查看或解除拉黑</text>
+    </view>
+    <view class="quick-card" bindtap="onMenuTap" data-page="contact">
+      <text class="quick-title">联系客服</text>
+      <text class="quick-sub">提出建议与售后</text>
+    </view>
+  </view>
+
   <view class="tab-bar">
-    <view class="tab-item {{currentTab === index ? 'tab-item-active' : ''}}"
-      wx:for="{{tabs}}" wx:key="index"
-      bindtap="onTabChange" data-index="{{index}}">
+    <view class="tab-item {{currentTab === index ? 'tab-item-active' : ''}}" wx:for="{{tabs}}" wx:key="index" bindtap="onTabChange" data-index="{{index}}">
       <text>{{item}}</text>
     </view>
   </view>
@@ -61,20 +80,43 @@
       <text class="empty-icon">📝</text>
       <text class="empty-text">你还没有发布过帖子</text>
     </view>
-    <view class="card post-card-mini" wx:for="{{myPosts}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
-      <view class="post-card-header">
-        <view class="category-badge" wx:if="{{item.category}}"><text>{{item.category}}</text></view>
-        <text class="post-card-time">{{item.time}}</text>
+    <view class="wf-grid" wx:if="{{myPosts.length > 0}}">
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{myPostsLeft}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <view class="category-badge" wx:if="{{item.category}}"><text>{{item.category}}</text></view>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content">{{item.content}}</text>
+          <view class="post-card-footer">
+            <view class="post-card-stat"><text>❤️ {{item.likes}}</text></view>
+            <view class="post-card-stat"><text>💬 {{item.comments}}</text></view>
+          </view>
+        </view>
       </view>
-      <text class="post-card-content">{{item.content}}</text>
-      <view class="post-card-footer">
-        <view class="post-card-stat"><text>❤️ {{item.likes}}</text></view>
-        <view class="post-card-stat"><text>💬 {{item.comments}}</text></view>
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{myPostsRight}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <view class="category-badge" wx:if="{{item.category}}"><text>{{item.category}}</text></view>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content">{{item.content}}</text>
+          <view class="post-card-footer">
+            <view class="post-card-stat"><text>❤️ {{item.likes}}</text></view>
+            <view class="post-card-stat"><text>💬 {{item.comments}}</text></view>
+          </view>
+        </view>
       </view>
     </view>
-    <view class="list-load-footer" wx:if="{{myPosts.length > 0}}">
+    <view class="expand-row" wx:if="{{myPosts.length > 2}}">
+      <view class="expand-btn" bindtap="onToggleExpand" data-type="myPosts">{{myPostsExpanded ? '收起内容' : '展开更多'}}</view>
+    </view>
+    <view class="list-load-footer" wx:if="{{myPostsExpanded && myPosts.length > 0}}">
       <text wx:if="{{myPostsLoadingMore}}">加载中...</text>
       <text wx:elif="{{!myPostsHasMore}}">— 没有更多了 —</text>
+      <text wx:else>上拉加载更多</text>
     </view>
   </view>
 
@@ -84,17 +126,37 @@
       <text class="empty-icon">🛍️</text>
       <text class="empty-text">你还没有发布过闲置商品</text>
     </view>
-    <view class="card post-card-mini" wx:for="{{myGoods}}" wx:key="_id" bindtap="goToMarketDetail" data-id="{{item._id}}">
-      <view class="post-card-header">
-        <view class="category-badge" style="background:#fff8ed;color:#ff8c00" wx:if="{{item.category}}"><text>{{item.category}}</text></view>
-        <text class="post-card-time">{{item.time}}</text>
+    <view class="wf-grid" wx:if="{{myGoods.length > 0}}">
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{myGoodsLeft}}" wx:key="_id" bindtap="goToMarketDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <view class="category-badge" style="background:#fff8ed;color:#ff8c00" wx:if="{{item.category}}"><text>{{item.category}}</text></view>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content font-bold mb-1">{{item.title}}</text>
+          <text class="post-card-content text-red-500 font-bold">￥{{item.price}}</text>
+        </view>
       </view>
-      <text class="post-card-content font-bold mb-1">{{item.title}}</text>
-      <text class="post-card-content text-red-500 font-bold">￥{{item.price}}</text>
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{myGoodsRight}}" wx:key="_id" bindtap="goToMarketDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <view class="category-badge" style="background:#fff8ed;color:#ff8c00" wx:if="{{item.category}}"><text>{{item.category}}</text></view>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content font-bold mb-1">{{item.title}}</text>
+          <text class="post-card-content text-red-500 font-bold">￥{{item.price}}</text>
+        </view>
+      </view>
     </view>
-    <view class="list-load-footer" wx:if="{{myGoods.length > 0}}">
+    <view class="expand-row" wx:if="{{myGoods.length > 2}}">
+      <view class="expand-btn" bindtap="onToggleExpand" data-type="myGoods">{{myGoodsExpanded ? '收起内容' : '展开更多'}}</view>
+    </view>
+    <view class="list-load-footer" wx:if="{{myGoodsExpanded && myGoods.length > 0}}">
       <text wx:if="{{myGoodsLoadingMore}}">加载中...</text>
       <text wx:elif="{{!myGoodsHasMore}}">— 没有更多了 —</text>
+      <text wx:else>上拉加载更多</text>
     </view>
   </view>
 
@@ -104,16 +166,35 @@
       <text class="empty-icon">❤️</text>
       <text class="empty-text">还没有点赞过帖子</text>
     </view>
-    <view class="card post-card-mini" wx:for="{{likedPosts}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
-      <view class="post-card-header">
-        <text class="post-card-nickname">{{item.nickname}}</text>
-        <text class="post-card-time">{{item.time}}</text>
+    <view class="wf-grid" wx:if="{{likedPosts.length > 0}}">
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{likedPostsLeft}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <text class="post-card-nickname">{{item.nickname}}</text>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content">{{item.content}}</text>
+        </view>
       </view>
-      <text class="post-card-content">{{item.content}}</text>
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{likedPostsRight}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <text class="post-card-nickname">{{item.nickname}}</text>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content">{{item.content}}</text>
+        </view>
+      </view>
     </view>
-    <view class="list-load-footer" wx:if="{{likedPosts.length > 0}}">
+    <view class="expand-row" wx:if="{{likedPosts.length > 2}}">
+      <view class="expand-btn" bindtap="onToggleExpand" data-type="likedPosts">{{likedPostsExpanded ? '收起内容' : '展开更多'}}</view>
+    </view>
+    <view class="list-load-footer" wx:if="{{likedPostsExpanded && likedPosts.length > 0}}">
       <text wx:if="{{likedPostsLoadingMore}}">加载中...</text>
       <text wx:elif="{{!likedPostsHasMore}}">— 没有更多了 —</text>
+      <text wx:else>上拉加载更多</text>
     </view>
   </view>
 
@@ -123,46 +204,43 @@
       <text class="empty-icon">⭐</text>
       <text class="empty-text">还没有收藏过帖子</text>
     </view>
-    <view class="card post-card-mini" wx:for="{{favoredPosts}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
-      <view class="post-card-header">
-        <text class="post-card-nickname">{{item.nickname}}</text>
-        <text class="post-card-time">{{item.time}}</text>
+    <view class="wf-grid" wx:if="{{favoredPosts.length > 0}}">
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{favoredPostsLeft}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <text class="post-card-nickname">{{item.nickname}}</text>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content">{{item.content}}</text>
+        </view>
       </view>
-      <text class="post-card-content">{{item.content}}</text>
+      <view class="wf-col">
+        <view class="card post-card-mini" wx:for="{{favoredPostsRight}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+          <image wx:if="{{item._coverSrc}}" class="wf-cover" src="{{item._coverSrc}}" mode="aspectFill" lazy-load></image>
+          <view class="post-card-header">
+            <text class="post-card-nickname">{{item.nickname}}</text>
+            <text class="post-card-time">{{item.time}}</text>
+          </view>
+          <text class="post-card-content">{{item.content}}</text>
+        </view>
+      </view>
     </view>
-    <view class="list-load-footer" wx:if="{{favoredPosts.length > 0}}">
+    <view class="expand-row" wx:if="{{favoredPosts.length > 2}}">
+      <view class="expand-btn" bindtap="onToggleExpand" data-type="favoredPosts">{{favoredPostsExpanded ? '收起内容' : '展开更多'}}</view>
+    </view>
+    <view class="list-load-footer" wx:if="{{favoredPostsExpanded && favoredPosts.length > 0}}">
       <text wx:if="{{favoredPostsLoadingMore}}">加载中...</text>
       <text wx:elif="{{!favoredPostsHasMore}}">— 没有更多了 —</text>
+      <text wx:else>上拉加载更多</text>
     </view>
   </view>
 
-  <!-- 功能菜单 -->
   <view class="menu-section">
-    <view class="menu-item" wx:if="{{userInfo.role === 'admin'}}" bindtap="onMenuTap" data-page="adminReferral">
+    <view class="menu-item" bindtap="onMenuTap" data-page="referral">
       <view class="menu-left">
         <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/icon_share.png" mode="aspectFit"></image></view>
-        <text class="menu-name">员工推广统计</text>
-      </view>
-      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
-    </view>
-    <view class="menu-item" bindtap="onMenuTap" data-page="editProfile">
-      <view class="menu-left">
-        <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/icon_edit.png" mode="aspectFit"></image></view>
-        <text class="menu-name">编辑资料</text>
-      </view>
-      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
-    </view>
-    <view class="menu-item" bindtap="onMenuTap" data-page="searchUser">
-      <view class="menu-left">
-        <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/icon_search.png" mode="aspectFit"></image></view>
-        <text class="menu-name">搜索用户</text>
-      </view>
-      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
-    </view>
-    <view class="menu-item" bindtap="onChangeCover">
-      <view class="menu-left">
-        <view class="menu-icon-wrap menu-icon-secondary"><image class="menu-icon" src="/images/icon_camera.png" mode="aspectFit"></image></view>
-        <text class="menu-name">更换主页封面</text>
+        <text class="menu-name">我的推广</text>
       </view>
       <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
     </view>
@@ -173,20 +251,6 @@
       </view>
       <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
     </view>
-    <view class="menu-item" bindtap="onMenuTap" data-page="contact">
-      <view class="menu-left">
-        <view class="menu-icon-wrap menu-icon-secondary"><image class="menu-icon" src="/images/icon_service.png" mode="aspectFit"></image></view>
-        <text class="menu-name">联系客服</text>
-      </view>
-      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
-    </view>
-    <view class="menu-item" bindtap="onClearData">
-      <view class="menu-left">
-        <view class="menu-icon-wrap menu-icon-error"><image class="menu-icon" src="/images/icon_report.png" mode="aspectFit"></image></view>
-        <text class="menu-name">清除缓存数据</text>
-      </view>
-      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
-    </view>
     <view class="menu-item menu-item-logout" bindtap="onLogout">
       <view class="menu-left">
         <view class="menu-icon-wrap menu-icon-gray"><image class="menu-icon" src="/images/icon_logout.png" mode="aspectFit"></image></view>
@@ -194,19 +258,60 @@
       </view>
       <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
     </view>
-    <view class="menu-item menu-item-danger" bindtap="onDeleteAccount">
-      <view class="menu-left">
-        <view class="menu-icon-wrap menu-icon-error"><image class="menu-icon" src="/images/icon_report.png" mode="aspectFit"></image></view>
-        <text class="menu-name" style="color:#d32f2f;">注销账号</text>
+
+    <view class="menu-more-wrap">
+      <view class="menu-more-btn" bindtap="onToggleMenuMore">{{menuExpanded ? '收起更多' : '展开更多'}}</view>
+    </view>
+
+    <view wx:if="{{menuExpanded}}">
+      <view class="menu-item" wx:if="{{userInfo.role === 'admin'}}" bindtap="onMenuTap" data-page="adminReferral">
+        <view class="menu-left">
+          <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/icon_share.png" mode="aspectFit"></image></view>
+          <text class="menu-name">员工推广统计</text>
+        </view>
+        <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
       </view>
-      <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+      <view class="menu-item" wx:if="{{userInfo.role === 'admin'}}" bindtap="onMenuTap" data-page="adminAnnouncement">
+        <view class="menu-left">
+          <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/icon_report.png" mode="aspectFit"></image></view>
+          <text class="menu-name">公告管理</text>
+        </view>
+        <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+      </view>
+      <view class="menu-item" wx:if="{{userInfo.role === 'admin'}}" bindtap="onMenuTap" data-page="adminActivityZone">
+        <view class="menu-left">
+          <view class="menu-icon-wrap menu-icon-primary"><image class="menu-icon" src="/images/cat_team.png" mode="aspectFit"></image></view>
+          <text class="menu-name">活动专区配置</text>
+        </view>
+        <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+      </view>
+      <view class="menu-item" bindtap="onMenuTap" data-page="contact">
+        <view class="menu-left">
+          <view class="menu-icon-wrap menu-icon-secondary"><image class="menu-icon" src="/images/icon_service.png" mode="aspectFit"></image></view>
+          <text class="menu-name">联系客服</text>
+        </view>
+        <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+      </view>
+      <view class="menu-item" bindtap="onClearData">
+        <view class="menu-left">
+          <view class="menu-icon-wrap menu-icon-error"><image class="menu-icon" src="/images/icon_report.png" mode="aspectFit"></image></view>
+          <text class="menu-name">清除缓存数据</text>
+        </view>
+        <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+      </view>
+      <view class="menu-item menu-item-danger" bindtap="onDeleteAccount">
+        <view class="menu-left">
+          <view class="menu-icon-wrap menu-icon-error"><image class="menu-icon" src="/images/icon_report.png" mode="aspectFit"></image></view>
+          <text class="menu-name" style="color:#d32f2f;">注销账号</text>
+        </view>
+        <image class="menu-arrow" src="/images/icon_arrow.png" mode="aspectFit"></image>
+      </view>
     </view>
   </view>
 
-  <view class="footer-brand">
-    <text class="footer-title">THE DIGITAL COMMONS</text>
-    <text class="footer-version">Version 2.0.0 • Built for Campus Spirit</text>
-  </view>
-  <view class="bottom-placeholder"></view>
+    <view class="footer-brand">
+      <text class="footer-version">校园便利盒 · Mine</text>
+    </view>
+    <view class="bottom-placeholder"></view>
   </view>
 </view>

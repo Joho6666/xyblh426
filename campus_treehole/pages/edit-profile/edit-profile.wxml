@@ -1,6 +1,35 @@
 <view class="page-container">
   <view class="form-card">
     <view class="field-block">
+      <text class="field-label">头像与背景</text>
+      <view class="media-grid">
+        <view class="avatar-editor" bindtap="onChooseAvatar">
+          <image class="avatar-preview" src="{{editAvatarUrl || '/images/avatar_default.png'}}" mode="aspectFill"></image>
+          <text class="avatar-tip">更换头像</text>
+        </view>
+        <view class="cover-editor" bindtap="onChooseCover">
+          <image wx:if="{{editCoverImage}}" class="cover-preview" src="{{editCoverImage}}" mode="aspectFill"></image>
+          <view wx:else class="cover-empty">点击选择背景图</view>
+          <view class="cover-mask">
+            <text class="cover-tip">更换背景图</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="field-block">
+      <text class="field-label">昵称</text>
+      <input
+        class="field-input"
+        placeholder="请输入昵称"
+        maxlength="20"
+        value="{{editNickName}}"
+        bindinput="onNickNameInput"
+        cursor-spacing="120"
+      />
+    </view>
+
+    <view class="field-block">
       <text class="field-label">自我介绍</text>
       <textarea
         class="field-textarea"
@@ -15,20 +44,35 @@
     </view>
 
     <view class="field-block">
-      <text class="field-label">兴趣爱好（用顿号分隔）</text>
-      <input
-        class="field-input"
-        placeholder="如：编程、摄影、跑步"
-        value="{{editTags}}"
-        bindinput="onTagsInput"
-        cursor-spacing="120"
-      />
+      <text class="field-label">兴趣爱好（逐条添加）</text>
+      <view class="tag-editor-wrap">
+        <view class="tag-list" wx:if="{{editTags.length > 0}}">
+          <view class="tag-item" wx:for="{{editTags}}" wx:key="index">
+            <text class="tag-item-text">{{item}}</text>
+            <text class="tag-item-del" bindtap="onDeleteTag" data-index="{{index}}">×</text>
+          </view>
+        </view>
+        <view class="tag-input-row">
+          <input
+            class="field-input tag-input"
+            placeholder="输入兴趣后点击添加，如：摄影"
+            maxlength="12"
+            value="{{tagInput}}"
+            bindinput="onTagInput"
+            bindconfirm="onAddTag"
+            confirm-type="done"
+            cursor-spacing="120"
+          />
+          <view class="tag-add-btn" bindtap="onAddTag">+ 添加</view>
+        </view>
+        <text class="tag-help">已添加 {{editTags.length}} / 20</text>
+      </view>
     </view>
   </view>
 
   <view class="tips-card">
     <text class="tips-title">填写建议</text>
-    <text class="tips-text">简介和标签会展示在你的个人资料页，建议简短清晰，避免敏感或违规内容。</text>
+    <text class="tips-text">昵称、头像、背景图、简介和标签都会展示在个人资料页，保存时会自动进行内容安全审核。</text>
   </view>
 
   <view class="action-bar">

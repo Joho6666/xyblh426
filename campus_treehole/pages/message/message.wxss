@@ -1,5 +1,10 @@
 .page-container {
   padding: 0 28rpx;
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .msg-header {
@@ -80,6 +85,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+
+.notify-bar {
+  margin-bottom: 16rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 20rpx;
+  background: var(--surface-container-low);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.notify-tip {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  color: var(--on-surface-variant);
+}
+
+.notify-btn {
+  flex-shrink: 0;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--primary);
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.notify-btn-on {
+  background: rgba(79, 111, 150, 0.16);
+  color: var(--primary);
+}
+
+.msg-scroll {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 140rpx);
   box-sizing: border-box;
 }
 
@@ -338,5 +382,5 @@
 }
 
 .bottom-placeholder {
-  height: 40rpx;
+  height: 20rpx;
 }

@@ -11,6 +11,50 @@
 </view>
 
 <view class="page">
+  <view class="subscribe-guide-mask" wx:if="{{showSubscribeGuideModal}}" bindtap="onCloseSubscribeGuideModal">
+    <view class="subscribe-guide-modal" catchtap="">
+      <text class="subscribe-guide-step">第{{subscribeGuideStep}}步 / 2</text>
+      <text class="subscribe-guide-title">{{subscribeGuideStep === 1 ? '先开启核心互动提醒' : '继续开启收藏与下架提醒'}}</text>
+      <text class="subscribe-guide-desc" wx:if="{{subscribeGuideStep === 1}}">你最常用的互动通知，建议优先开启：</text>
+      <text class="subscribe-guide-desc" wx:else>再点一次补齐收藏/转发/下架提醒：</text>
+      <view class="subscribe-guide-list">
+        <block wx:if="{{subscribeGuideStep === 1}}">
+          <text class="subscribe-guide-item">- 点赞提醒</text>
+          <text class="subscribe-guide-item">- 私信提醒</text>
+          <text class="subscribe-guide-item">- 评论互动提醒</text>
+        </block>
+        <block wx:else>
+          <text class="subscribe-guide-item">- 谁收藏了你的帖子</text>
+          <text class="subscribe-guide-item">- 谁转发了你的帖子</text>
+          <text class="subscribe-guide-item">- 你收藏/想要的商品被下架</text>
+          <text class="subscribe-guide-item">- 开启后可在设置页随时调整</text>
+        </block>
+      </view>
+      <view class="subscribe-guide-actions">
+        <view class="subscribe-guide-btn ghost" bindtap="onCloseSubscribeGuideModal">{{subscribeGuideStep === 1 ? '稍后再说' : '先不补充'}}</view>
+        <view class="subscribe-guide-btn primary" bindtap="onEnableSubscribeFromGuide">
+          {{subscribeGuideSubmitting ? '请求中...' : (subscribeGuideStep === 1 ? '开启第1步' : '开启第2步')}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="announcement-modal-mask" wx:if="{{showAnnouncementModal}}" bindtap="onTapAnnouncementMask">
+    <view class="announcement-modal" catchtap="">
+      <view class="announcement-modal-close" bindtap="onCloseAnnouncementModal">×</view>
+      <view class="announcement-modal-head">
+        <text class="announcement-modal-badge">公告</text>
+        <text class="announcement-modal-title">{{modalAnnouncement.title}}</text>
+      </view>
+      <image class="announcement-modal-cover" wx:if="{{modalAnnouncement.images && modalAnnouncement.images.length}}" src="{{modalAnnouncement.images[0]}}" mode="widthFix"></image>
+      <text class="announcement-modal-content">{{modalAnnouncement.content}}</text>
+      <view class="announcement-modal-actions">
+        <view class="announcement-modal-btn ghost" bindtap="onCloseAnnouncementModal">关闭</view>
+        <view class="announcement-modal-btn primary" bindtap="onOpenAnnouncementFromModal">查看详情</view>
+      </view>
+    </view>
+  </view>
+
   <view class="index-ambient">
     <view class="ambient-orb ambient-orb-1"></view>
     <view class="ambient-orb ambient-orb-2"></view>
@@ -21,16 +65,78 @@
       <view class="nav-tabs">
         <text class="nav-tab {{feedType === 'follow' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="follow">关注</text>
         <text class="nav-tab {{feedType === 'discover' ? 'nav-tab-active' : ''}}" bindtap="onFeedSwitch" data-type="discover">发现</text>
+        <text class="nav-tab" bindtap="onOpenActivityZone" hover-class="nav-tab-tap" hover-stay-time="80">活动</text>
       </view>
       <view class="nav-search" bindtap="onSearchFocus">
-        <text class="nav-search-icon">🔍</text>
-        <input class="nav-search-input" placeholder="搜索" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
-        <view class="nav-search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">清除</view>
+        <view class="nav-search-ico" aria-hidden="true"></view>
+        <input
+          class="nav-search-input"
+          placeholder="搜索帖子标题或正文"
+          placeholder-class="nav-search-ph"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+          confirm-type="search"
+        />
+        <view class="nav-search-clear" wx:if="{{searchKeyword}}" catchtap="onClearSearch">清除</view>
+      </view>
+      <view class="nav-campus-row" bindtap="onOpenCampusPicker">
+        <text class="nav-campus-tag">校区</text>
+        <text class="nav-campus-name">{{selectedCampusName || '请选择校区'}}</text>
+        <text class="nav-campus-arrow">›</text>
       </view>
     </view>
   </view>
 
   <view style="height: {{navOffsetHeight}}px;"></view>
+
+  <view class="announcement-strip" wx:if="{{latestAnnouncement}}" bindtap="onOpenAnnouncement">
+    <text class="announcement-badge">公告</text>
+    <text class="announcement-title">{{latestAnnouncement.title}}</text>
+    <text class="announcement-arrow">›</text>
+  </view>
+
+  <view class="campus-mask" wx:if="{{showCampusPicker}}" catchtouchmove="preventCampusMove">
+    <view class="campus-sheet" catchtap="">
+      <view class="campus-sheet-handle"></view>
+      <text class="campus-sheet-title">选择你的校区</text>
+      <text class="campus-sheet-sub">内容仅展示所选校区，可随时更换；支持简称、空格多关键词</text>
+      <view class="campus-search-wrap">
+        <view class="campus-search-ico" aria-hidden="true"></view>
+        <input
+          class="campus-search-input"
+          placeholder="搜校名、简称或拼音片段，如 桂电 雁山"
+          placeholder-class="campus-search-ph"
+          value="{{campusQuery}}"
+          bindinput="onCampusSearch"
+          bindconfirm="onCampusSearchConfirm"
+          confirm-type="search"
+        />
+        <view class="campus-search-clear" wx:if="{{campusQuery}}" catchtap="onClearCampusSearch">清除</view>
+      </view>
+      <scroll-view
+        class="campus-list"
+        scroll-y
+        enhanced
+        show-scrollbar="{{true}}"
+        enable-flex
+        scroll-with-animation
+      >
+        <view
+          class="campus-item"
+          wx:for="{{campusPickerList}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onPickCampus"
+        >
+          <text class="campus-item-name">{{item.name}}</text>
+          <text class="campus-item-arrow">›</text>
+        </view>
+        <view wx:if="{{!campusPickerList.length}}" class="campus-empty">未找到匹配校区，试试校名里的连续几个字或简称</view>
+        <view class="campus-list-spacer"></view>
+      </scroll-view>
+    </view>
+  </view>
 
   <scroll-view class="category-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
     <view class="category-track">
@@ -63,6 +169,7 @@
   <view class="waterfall" wx:if="{{!showSkeleton}}">
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{leftCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40}}ms;">
+        <view class="wf-activity-tag" wx:if="{{item.inActivityZone}}">活动</view>
         <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
           <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
           <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />
@@ -98,6 +205,7 @@
 
     <view class="wf-col">
       <view class="wf-card wf-card-enter" wx:for="{{rightCol}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}" style="animation-delay: {{index * 40 + 20}}ms;">
+        <view class="wf-activity-tag" wx:if="{{item.inActivityZone}}">活动</view>
         <view wx:if="{{item._coverSrc}}" class="wf-cover-wrap {{mediaLoadedMap[item._id] ? 'wf-cover-wrap-ready' : ''}}" style="{{coverHeightsMap[item._id] ? 'height:' + coverHeightsMap[item._id] + 'rpx;' : ''}}">
           <view class="wf-media-skeleton {{mediaLoadedMap[item._id] ? 'wf-media-skeleton-hidden' : ''}}"></view>
           <image class="wf-cover {{mediaLoadedMap[item._id] ? 'wf-cover-ready' : ''}}" src="{{item._coverSrc}}" mode="aspectFill" lazy-load bindload="onMediaLoad" binderror="onMediaLoad" data-key="{{item._id}}" />

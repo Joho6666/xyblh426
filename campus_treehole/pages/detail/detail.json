@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "校园便利盒"
+  "navigationBarTitleText": "校园便利盒",
+  "enableShareTimeline": true
 }

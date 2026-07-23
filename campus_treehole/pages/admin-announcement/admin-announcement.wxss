@@ -1,0 +1,298 @@
+.page {
+  padding: 24rpx;
+  background: #f5f7fb;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 10rpx 4rpx 18rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 42rpx;
+  font-weight: 800;
+  color: #1f2b3d;
+}
+
+.hero-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #7c8594;
+}
+
+.block {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(31, 43, 61, 0.06);
+}
+
+.h1 {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #f6f7fb;
+  border-radius: 14rpx;
+  border: 1rpx solid #e5e9f0;
+  padding: 18rpx;
+  margin-bottom: 12rpx;
+  font-size: 28rpx;
+  color: #243245;
+}
+
+.title-input {
+  height: 84rpx;
+  line-height: 84rpx;
+}
+
+.textarea {
+  min-height: 220rpx;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12rpx 0;
+}
+
+.picker {
+  color: #426089;
+  font-weight: 600;
+}
+
+.label {
+  display: block;
+  margin-top: 8rpx;
+  margin-bottom: 8rpx;
+  color: #6f7580;
+  font-size: 24rpx;
+}
+
+.campus {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 20rpx;
+  margin-bottom: 12rpx;
+  background: #f8faff;
+  border: 1rpx solid #e8edf5;
+  border-radius: 999rpx;
+  padding: 6rpx 14rpx 6rpx 10rpx;
+}
+
+.campus text {
+  margin-left: 8rpx;
+  font-size: 24rpx;
+}
+
+.campus-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 6rpx;
+}
+
+.campus-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 16rpx;
+  margin-bottom: 14rpx;
+  background: #ffffff;
+  border: 2rpx solid #d7deea;
+  border-radius: 999rpx;
+  padding: 12rpx 22rpx 12rpx 14rpx;
+  min-height: 60rpx;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.campus-chip-hover {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.campus-name {
+  font-size: 26rpx;
+  color: #6b7383;
+  line-height: 1.2;
+}
+
+.campus-mark {
+  width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  text-align: center;
+  border-radius: 50%;
+  border: 2rpx solid #c7d0df;
+  margin-right: 12rpx;
+  color: transparent;
+  background: #ffffff;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.campus-chip-on {
+  background: #e6f0ff;
+  border-color: #1f6feb;
+}
+
+.campus-chip-on .campus-mark {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #ffffff;
+  box-shadow: 0 2rpx 6rpx rgba(31, 111, 235, 0.35);
+}
+
+.campus-chip-on .campus-name {
+  color: #1f3a64;
+  font-weight: 700;
+}
+
+.campus-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.campus-count {
+  flex: 1;
+  font-size: 24rpx;
+  color: #6f7580;
+}
+
+.campus-action-btn {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #ecf2fb;
+  color: #426089;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.btn {
+  margin-top: 20rpx;
+  background: #426089;
+  color: #fff;
+  border-radius: 14rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.image-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4rpx 0 10rpx;
+}
+
+.upload-btn {
+  padding: 10rpx 16rpx;
+  border-radius: 10rpx;
+  background: #ecf2fb;
+  color: #426089;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.upload-hint {
+  font-size: 22rpx;
+  color: #8a92a1;
+}
+
+.image-scroll {
+  width: 100%;
+  white-space: nowrap;
+  margin-bottom: 12rpx;
+}
+
+.image-track {
+  display: inline-flex;
+  gap: 12rpx;
+}
+
+.img-card {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 14rpx;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+}
+
+.img-del {
+  position: absolute;
+  right: 6rpx;
+  top: 6rpx;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 34rpx;
+  font-size: 26rpx;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.item {
+  border: 1rpx solid #eceff3;
+  border-radius: 14rpx;
+  padding: 14rpx;
+  margin-bottom: 10rpx;
+}
+
+.item-top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.status {
+  color: #426089;
+  font-size: 22rpx;
+}
+
+.list-cover {
+  width: 100%;
+  height: 180rpx;
+  border-radius: 12rpx;
+  margin-top: 10rpx;
+}
+
+.meta {
+  display: block;
+  margin: 8rpx 0 12rpx;
+  color: #8b919a;
+  font-size: 22rpx;
+}
+
+.campus-meta {
+  display: block;
+  margin: 0 0 10rpx;
+  color: #6f7580;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.card-actions {
+  display: flex;
+  gap: 12rpx;
+}

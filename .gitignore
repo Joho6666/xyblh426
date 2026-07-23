@@ -26,3 +26,6 @@ yarn-error.log*
 # WeChat Mini Program local/private config
 project.private.config.json
 
+
+# Local cloud environment config with secrets
+campus_treehole/cloudbaserc.json

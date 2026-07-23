@@ -4,6 +4,7 @@
   --primary-dim: #35547d;
   --on-primary: #f8f8ff;
   --accent: #c94a62;
+  --xhs-red: #ff2442;
   --outline-variant: #abb3b9;
   --on-surface: #2c3338;
 
@@ -44,48 +45,48 @@
   padding-top: 6rpx;
 }
 
-/* ===== 中间发布按钮 ===== */
+/* ===== 中间发布按钮（小红书式：红底圆角矩形 + 号）===== */
 .center-btn {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: linear-gradient(145deg, var(--primary), var(--primary-dim));
+  width: 108rpx;
+  height: 88rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(180deg, #ff4d6a 0%, var(--xhs-red) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -36rpx;
-  box-shadow: 0 12rpx 32rpx rgba(66, 96, 137, 0.38);
+  margin-top: -40rpx;
+  box-shadow: 0 10rpx 28rpx rgba(255, 36, 66, 0.42);
   position: relative;
 }
 
 .center-btn:active {
-  transform: scale(0.92);
-  opacity: 0.9;
+  transform: scale(0.94);
+  opacity: 0.92;
 }
 
 .plus-icon {
   position: relative;
-  width: 40rpx;
-  height: 40rpx;
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .plus-h, .plus-v {
   position: absolute;
   background: #ffffff;
-  border-radius: 4rpx;
+  border-radius: 3rpx;
 }
 
 .plus-h {
-  width: 40rpx;
-  height: 6rpx;
-  top: 17rpx;
+  width: 36rpx;
+  height: 5rpx;
+  top: 15rpx;
   left: 0;
 }
 
 .plus-v {
-  width: 6rpx;
-  height: 40rpx;
-  left: 17rpx;
+  width: 5rpx;
+  height: 36rpx;
+  left: 15rpx;
   top: 0;
 }
 
@@ -127,7 +128,7 @@
 
 /* ===== Tab文字 ===== */
 .tab-text {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: var(--outline-variant);
   font-weight: 500;
   line-height: 1;

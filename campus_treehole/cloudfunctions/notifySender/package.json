@@ -1,0 +1,9 @@
+{
+  "name": "notifySender",
+  "version": "1.0.0",
+  "description": "小程序订阅消息发送器",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

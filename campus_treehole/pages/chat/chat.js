@@ -73,7 +73,42 @@ Page({
     scrollToMsg: '',
     playingId: '',
     myAvatarUrl: '/images/avatar_default.png',
+    chatBlocked: false,
+    chatBlockedTip: '',
     emojis: ['😀', '😄', '😆', '😉', '🥹', '😍', '🤔', '😭', '😡', '🥳', '👍', '👏', '🙏', '❤️', '💔', '🎉']
+  },
+
+  async beginRecordingSession() {
+    if (this.data.chatBlocked) return false
+    if (this.data.isRecording || this.data.sending) return false
+    const permitted = await this.ensureRecordPermission()
+    if (!permitted) return false
+    this.recordWillCancel = false
+    this._lastCancelHint = false
+    this.setData({
+      isRecording: true,
+      recordingCancelHint: false,
+      recordingDuration: 0,
+      recordingTimeStr: '0:00',
+      showEmojiPanel: false,
+      showActionPanel: false
+    })
+    try {
+      wx.vibrateShort({ type: 'heavy' })
+    } catch (err) {}
+    this._startRecordingTimer()
+    this._startWaveAnimation()
+    recorderManager.start({ duration: 60000, format: 'mp3' })
+    return true
+  },
+
+  finishRecordingSession({ cancel = false } = {}) {
+    if (!this.data.isRecording) return
+    this.recordWillCancel = !!cancel
+    this._stopRecordingTimer()
+    this._stopWaveAnimation()
+    this.setData({ recordingCancelHint: false })
+    recorderManager.stop()
   },
 
   getDraftKey() {
@@ -102,6 +137,60 @@ Page({
       setTimeout(run, delay)
     } else {
       run()
+    }
+  },
+
+  /** 发送成功后增量追加一条，避免整页重拉（低配机明显更流畅） */
+  async appendOutgoingAfterSend(rawMsg) {
+    if (!rawMsg || !rawMsg._id) return
+    try {
+      const myOpenid = app.globalData.openid
+      const currentMessages = this.data.messages || []
+      const withCover = await this.resolveShareCardCoverIds([rawMsg])
+      const resolvedBatch = await this.resolveMediaMessages(withCover)
+      const message = resolvedBatch[0]
+      if (!message) return
+
+      const isMine = message.fromOpenid === myOpenid
+      const avatar = isMine
+        ? (this.data.myAvatarUrl || '/images/avatar_default.png')
+        : (this.data.targetUser.avatarUrl || '/images/avatar_default.png')
+      const timeStr = app.formatTime(message.createTime)
+      const previous = currentMessages[currentMessages.length - 1]
+      const previousTimeStr = previous ? (previous.timeStr || app.formatTime(previous.createTime)) : ''
+      const row = {
+        ...message,
+        isMine,
+        avatar,
+        timeStr,
+        showTime: !previous || timeStr !== previousTimeStr,
+        voiceSeconds: formatVoiceSeconds(message.duration),
+        voiceWidth: getVoiceWidth(message.duration)
+      }
+      const idStr = String(row._id)
+      if (currentMessages.some((m) => String(m._id) === idStr)) {
+        this.setData({ loading: false, loadError: '' })
+        return
+      }
+
+      const merged = currentMessages.concat([row])
+      this.setData({
+        messages: merged,
+        loading: false,
+        loadError: '',
+        scrollToMsg: `msg-${row._id}`
+      })
+      this.scrollToBottom()
+      app.invalidateCacheByPrefix('unread:')
+      app.syncMessageBadge(
+        typeof this.getTabBar === 'function' ? this.getTabBar() : null,
+        { minIntervalMs: 15000 }
+      )
+      // 自己刚发完，对方很可能立刻回复，把轮询间隔重置回最快档
+      this.resetPollBackoff && this.resetPollBackoff()
+    } catch (err) {
+      console.warn('appendOutgoingAfterSend', err)
+      await this.loadMessages()
     }
   },
 
@@ -144,6 +233,41 @@ Page({
     }
     this.setData({ targetOpenid })
     wx.setNavigationBarTitle({ title: initialTitle || '聊天' })
+
+    if (!targetOpenid) {
+      this.setData({
+        loading: false,
+        loadError: '缺少聊天对象，请从私信入口重新进入'
+      })
+      return
+    }
+
+    await new Promise((resolve) => {
+      app.waitForLogin(() => resolve())
+    })
+
+    const rel = await app.getBlockRelation(targetOpenid)
+    let chatBlocked = false
+    let chatBlockedTip = ''
+    if (rel.either) {
+      chatBlocked = true
+      if (rel.theyBlockedMe && rel.iBlockedThem) {
+        chatBlockedTip = '双方存在拉黑关系，无法继续私信'
+      } else if (rel.theyBlockedMe) {
+        chatBlockedTip = '对方已将你拉黑，无法发送私信'
+      } else {
+        chatBlockedTip = '你已拉黑对方，若要发消息请先在对方主页解除拉黑'
+      }
+      this.setData({
+        chatBlocked: true,
+        chatBlockedTip,
+        loading: false,
+        loadError: '',
+        messages: []
+      })
+    } else {
+      this.setData({ chatBlocked: false, chatBlockedTip: '' })
+    }
 
     this.isLoadingMessages = false
     this.recordWillCancel = false
@@ -191,11 +315,14 @@ Page({
           fileId: uploadRes.fileID,
           duration: res.duration
         })
-        if (!msg) return
+        if (!msg) {
+          wx.showToast({ title: '语音发送失败', icon: 'none' })
+          return
+        }
 
         this.setData({ showEmojiPanel: false, showActionPanel: false })
         this.setComposerStatus('语音已发送')
-        await this.loadMessages()
+        await this.appendOutgoingAfterSend(msg)
       } catch (err) {
         wx.showToast({ title: '语音发送失败', icon: 'none' })
       } finally {
@@ -220,23 +347,39 @@ Page({
     recorderManager.onStop(this.handleRecorderStop)
     recorderManager.onError(this.handleRecorderError)
 
-    if (targetOpenid) {
-      const selfMedia = await app.resolveUserMedia(app.globalData.userInfo || {})
-      const targetUser = await app.getUserInfo(targetOpenid)
-      if (targetUser) {
-        const resolvedTargetUser = await app.resolveUserMedia(targetUser)
-        this.setData({
-          targetUser: resolvedTargetUser,
-          myAvatarUrl: selfMedia.avatarUrl || '/images/avatar_default.png'
-        })
-        wx.setNavigationBarTitle({ title: targetUser.nickName || initialTitle || '聊天' })
+    const selfMedia = await app.resolveUserMedia(app.globalData.userInfo || {})
+    let targetUser = null
+    if (!chatBlocked) {
+      targetUser = await app.getUserInfo(targetOpenid)
+    } else {
+      try {
+        const result = await app.callDB('getUserInfo', { targetOpenid })
+        targetUser = result.data
+      } catch (e) {
+        targetUser = null
       }
+      if (!targetUser) {
+        targetUser = {
+          nickName: initialTitle || '对方',
+          avatarUrl: '/images/avatar_default.png'
+        }
+      }
+    }
+    if (targetUser) {
+      const resolvedTargetUser = await app.resolveUserMedia(targetUser)
+      this.setData({
+        targetUser: resolvedTargetUser,
+        myAvatarUrl: selfMedia.avatarUrl || '/images/avatar_default.png'
+      })
+      wx.setNavigationBarTitle({ title: targetUser.nickName || initialTitle || '聊天' })
+    }
 
+    if (!chatBlocked) {
       await this.preparePendingShare()
       this.restoreInputDraft()
       await this.loadMessages()
-      app.syncMessageBadge(typeof this.getTabBar === 'function' ? this.getTabBar() : null)
     }
+    app.syncMessageBadge(typeof this.getTabBar === 'function' ? this.getTabBar() : null)
   },
 
   onShow() {
@@ -287,22 +430,59 @@ Page({
     }
   },
 
+  /**
+   * 聊天轮询自适应：最低 5s（活跃中），无新消息时阶梯式放慢到 8s/12s/20s/30s，
+   * 一旦有新消息或自己发消息就立刻回到最低间隔。
+   */
+  _scheduleNextPoll() {
+    if (this.refreshTimer || this.data.chatBlocked || !this.data.targetOpenid) return
+    const idle = this._idlePollCount || 0
+    const delay = idle === 0 ? 5000
+      : idle === 1 ? 8000
+      : idle === 2 ? 12000
+      : idle === 3 ? 20000
+      : 30000
+    this.refreshTimer = setTimeout(async () => {
+      this.refreshTimer = null
+      const before = (this.data.messages || []).length
+      try {
+        await this.loadMessages({ silent: true })
+      } catch (e) {}
+      const after = (this.data.messages || []).length
+      if (after > before) {
+        this._idlePollCount = 0
+      } else {
+        this._idlePollCount = Math.min(4, idle + 1)
+      }
+      this._scheduleNextPoll()
+    }, delay)
+  },
+
   startRefreshTimer() {
-    if (!this.data.targetOpenid || this.refreshTimer) return
-    this.refreshTimer = setInterval(() => {
-      this.loadMessages({ silent: true })
-    }, 6000)
+    if (!this.data.targetOpenid || this.refreshTimer || this.data.chatBlocked) return
+    this._idlePollCount = 0
+    this._scheduleNextPoll()
+  },
+
+  /** 用户发送/收到消息后立刻把轮询重置回最高频率 */
+  resetPollBackoff() {
+    this._idlePollCount = 0
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer)
+      this.refreshTimer = null
+      this._scheduleNextPoll()
+    }
   },
 
   stopRefreshTimer() {
     if (this.refreshTimer) {
-      clearInterval(this.refreshTimer)
+      clearTimeout(this.refreshTimer)
       this.refreshTimer = null
     }
   },
 
   async loadMessages({ silent = false } = {}) {
-    if (!this.data.targetOpenid || this.isLoadingMessages) return
+    if (!this.data.targetOpenid || this.isLoadingMessages || this.data.chatBlocked) return
 
     this.isLoadingMessages = true
     if (this._loadMsgTimeout) clearTimeout(this._loadMsgTimeout)
@@ -349,6 +529,9 @@ Page({
       // 静默轮询增量模式：只追加新消息，不重算整页媒体
       if (sinceTime > 0) {
         if (rawMessages.length === 0) {
+          if (this.data.loading) {
+            this.setData({ loading: false })
+          }
           return
         }
         const withCoverIds = await this.resolveShareCardCoverIds(rawMessages)
@@ -591,6 +774,10 @@ Page({
   onRecordingOverlayMove() {},
 
   async onSend() {
+    if (this.data.chatBlocked) {
+      wx.showToast({ title: this.data.chatBlockedTip || '无法发送', icon: 'none' })
+      return
+    }
     if (this.data.sending) return
     const text = this.data.inputText.trim()
     if (!text) return
@@ -620,7 +807,7 @@ Page({
         showActionPanel: false
       })
       this.setComposerStatus('发送成功')
-      await this.loadMessages()
+      await this.appendOutgoingAfterSend(msg)
     } catch (err) {
       wx.showToast({ title: '发送失败，请检查网络', icon: 'none' })
     } finally {
@@ -704,7 +891,7 @@ Page({
       }
       this.setData({ pendingShare: null })
       this.setComposerStatus('内容卡片已发送')
-      await this.loadMessages()
+      await this.appendOutgoingAfterSend(msg)
     } catch (err) {
       wx.showToast({ title: '发送失败，请检查网络', icon: 'none' })
     } finally {
@@ -717,11 +904,11 @@ Page({
     const id = e.currentTarget.dataset.id
     if (!type || !id) return
     if (type === 'post') {
-      wx.navigateTo({ url: `/pages/detail/detail?id=${id}` })
+      wx.navigateTo({ url: `/pages/detail/detail?id=${encodeURIComponent(id)}` })
       return
     }
     if (type === 'goods') {
-      wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${id}` })
+      wx.navigateTo({ url: `/pages/market-detail/market-detail?id=${encodeURIComponent(id)}` })
     }
   },
 
@@ -754,7 +941,7 @@ Page({
       this.setData({ showEmojiPanel: false })
       this.setComposerStatus('发送成功')
       this.scrollToBottom(80)
-      await this.loadMessages()
+      await this.appendOutgoingAfterSend(msg)
     } catch (err) {
       wx.showToast({ title: '发送失败，请检查网络', icon: 'none' })
     } finally {
@@ -852,31 +1039,16 @@ Page({
   },
 
   async onVoiceTouchStart(e) {
-    if (this.data.isRecording || this.data.sending) return
-    const permitted = await this.ensureRecordPermission()
-    if (!permitted) return
-
-    const touch = e.touches[0]
+    if (this.data.sending) return
+    this._voiceTouchActive = true
+    const touch = e.touches && e.touches[0]
+    if (!touch) return
     this._voiceTouchStartY = touch.clientY
     this._voiceTouchId = touch.identifier
-
-    this.recordWillCancel = false
-    this._lastCancelHint = false
-    this.setData({
-      isRecording: true,
-      recordingCancelHint: false,
-      recordingDuration: 0,
-      recordingTimeStr: '0:00',
-      showEmojiPanel: false,
-      showActionPanel: false
-    })
-    try {
-      wx.vibrateShort({ type: 'heavy' })
-    } catch (err) {}
-
-    this._startRecordingTimer()
-    this._startWaveAnimation()
-    recorderManager.start({ duration: 60000, format: 'mp3' })
+    const started = await this.beginRecordingSession()
+    if (!this._voiceTouchActive && started) {
+      this.finishRecordingSession({ cancel: true })
+    }
   },
 
   onVoiceTouchMove(e) {
@@ -903,24 +1075,15 @@ Page({
   },
 
   onVoiceTouchEnd() {
+    this._voiceTouchActive = false
     if (!this.data.isRecording) return
-    this._stopRecordingTimer()
-    this._stopWaveAnimation()
-
-    if (this.data.recordingCancelHint) {
-      this.recordWillCancel = true
-      this.setData({ recordingCancelHint: false })
-    }
-    recorderManager.stop()
+    this.finishRecordingSession({ cancel: !!this.data.recordingCancelHint })
   },
 
   onVoiceTouchCancel() {
+    this._voiceTouchActive = false
     if (!this.data.isRecording) return
-    this._stopRecordingTimer()
-    this._stopWaveAnimation()
-    this.recordWillCancel = true
-    this.setData({ recordingCancelHint: false })
-    recorderManager.stop()
+    this.finishRecordingSession({ cancel: true })
   },
 
   async onChooseFromAlbum() {
@@ -963,11 +1126,14 @@ Page({
         width: file.width || 0,
         height: file.height || 0
       })
-      if (!msg) return
+      if (!msg) {
+        wx.showToast({ title: '图片发送失败', icon: 'none' })
+        return
+      }
 
       this.setData({ showActionPanel: false })
       this.setComposerStatus('图片已发送')
-      await this.loadMessages()
+      await this.appendOutgoingAfterSend(msg)
     } catch (err) {
       if (err && /cancel/i.test(err.errMsg || '')) return
       wx.showToast({ title: '图片发送失败', icon: 'none' })
@@ -1197,6 +1363,6 @@ Page({
   },
 
   onViewProfile() {
-    wx.navigateTo({ url: `/pages/profile/profile?openid=${this.data.targetOpenid}` })
+    wx.navigateTo({ url: `/pages/profile/profile?openid=${encodeURIComponent(this.data.targetOpenid)}` })
   }
 })

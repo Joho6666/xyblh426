@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="card intro">
+    <text class="intro-title">邀请好友</text>
+    <text class="intro-desc">好友通过你的链接或太阳码进入小程序并登录后，会记为你的邀请（奖励规则后续上线）。</text>
+    <view class="ref-row" wx:if="{{numericId}}">
+      <text class="k">我的邀请参数</text>
+      <text class="v mono">u_{{numericId}}</text>
+    </view>
+    <view class="ref-row" wx:if="{{sharePath}}">
+      <text class="k">分享路径</text>
+      <text class="v path" selectable="true">{{sharePath}}</text>
+    </view>
+  </view>
+
+  <view class="card stats">
+    <view class="stat"><text class="num">{{inviteCount}}</text><text class="lbl">成功邀请人数</text></view>
+    <view class="stat"><text class="num">{{referralScanCount}}</text><text class="lbl">扫码记录次数</text></view>
+  </view>
+
+  <view class="card qr-card" wx:if="{{qrcodeDisplayUrl}}">
+    <text class="section-title">我的推广太阳码</text>
+    <view class="qr-wrap">
+      <image class="qr" src="{{qrcodeDisplayUrl}}" mode="aspectFit" show-menu-by-longpress />
+    </view>
+  </view>
+  <view class="card qr-card" wx:else>
+    <text class="section-title">推广太阳码</text>
+    <text class="muted">尚未生成，点击下方按钮生成（需云函数已配置 wxacode 权限）。</text>
+  </view>
+
+  <button class="btn-primary" loading="{{generating}}" bindtap="onGenerateQr">生成/更新我的太阳码</button>
+
+  <view class="hint">
+    <text>分享：使用右上角「…」转发给好友，或保存太阳码图片让对方微信扫码。</text>
+  </view>
+</view>

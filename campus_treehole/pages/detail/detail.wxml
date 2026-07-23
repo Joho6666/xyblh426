@@ -17,7 +17,48 @@
   </view>
 
   <!-- 帖子主体 -->
-  <view class="card post-detail-card" wx:elif="{{!loading}}">
+  <view class="post-detail-card" wx:elif="{{!loading}}">
+    <!-- 顶部媒体 -->
+    <view class="hero-media-wrap" wx:if="{{(post.images && post.images.length > 0) || post.image || (post.videos && post.videos.length > 0)}}">
+      <view class="detail-images" wx:if="{{post.images && post.images.length > 0}}">
+        <swiper
+          class="detail-image-swiper"
+          circular="{{post.images.length > 1}}"
+          indicator-dots="{{post.images.length > 1}}"
+          autoplay="false"
+          duration="260"
+          easing-function="easeOutCubic"
+          bindchange="onImageSwiperChange"
+        >
+          <swiper-item wx:for="{{post.images}}" wx:key="index">
+            <view class="detail-img-wrap">
+              <view class="detail-img-skeleton {{detailImgLoaded[index] ? 'detail-img-skeleton-hidden' : ''}}"></view>
+              <image
+                class="detail-image {{detailImgLoaded[index] ? 'detail-image-ready' : ''}}"
+                src="{{item}}"
+                mode="aspectFill"
+                bindtap="onPreviewImage"
+                data-index="{{index}}"
+                lazy-load
+                bindload="onDetailImgLoad"
+                binderror="onDetailImgLoad"
+                data-idx="{{index}}"
+              />
+            </view>
+          </swiper-item>
+        </swiper>
+      </view>
+      <view class="detail-images" wx:elif="{{post.image}}">
+        <image class="detail-image detail-image-ready" src="{{post.image}}" mode="widthFix" bindtap="onPreviewImage" data-index="0" />
+      </view>
+      <view class="detail-video-wrap" wx:if="{{post.videos && post.videos.length > 0}}">
+        <video class="detail-video" src="{{post.videos[0]}}" object-fit="cover" controls></video>
+      </view>
+      <view class="media-indicator" wx:if="{{post.images && post.images.length > 1}}">
+        <text>{{currentImageIndex + 1}}/{{post.images.length}}</text>
+      </view>
+    </view>
+
     <!-- 用户信息头部 -->
     <view class="detail-header">
       <view class="detail-user" bindtap="onAvatarTap" data-openid="{{post._openid}}">
@@ -29,8 +70,17 @@
           <text class="detail-meta">{{post.time}} · {{post.college}}</text>
         </view>
       </view>
-      <view class="category-badge" wx:if="{{post.category}}">
-        <text>{{post.category}}</text>
+      <view class="header-right">
+        <view class="category-badge" wx:if="{{post.category}}">
+          <text>{{post.category}}</text>
+        </view>
+        <view
+          class="follow-btn {{isFollowingAuthor ? 'follow-btn-following' : ''}}"
+          wx:if="{{showFollowAuthorBtn}}"
+          bindtap="onToggleFollowAuthor"
+        >
+          <text>{{isFollowingAuthor ? '已关注' : '+ 关注'}}</text>
+        </view>
       </view>
     </view>
 
@@ -38,55 +88,28 @@
     <view class="detail-body">
       <text class="detail-title" wx:if="{{post.title}}">{{post.title}}</text>
       <text class="detail-content">{{post.content}}</text>
-
-      <!-- 多图展示（逐张淡入） -->
-      <view class="detail-images" wx:if="{{post.images && post.images.length > 0}}">
-        <view class="detail-img-wrap" wx:for="{{post.images}}" wx:key="index" style="animation-delay: {{index * 80}}ms;">
-          <view class="detail-img-skeleton {{detailImgLoaded[index] ? 'detail-img-skeleton-hidden' : ''}}"></view>
-          <image
-            class="detail-image {{detailImgLoaded[index] ? 'detail-image-ready' : ''}}"
-            src="{{item}}"
-            mode="widthFix"
-            bindtap="onPreviewImage"
-            data-index="{{index}}"
-            lazy-load
-            bindload="onDetailImgLoad"
-            binderror="onDetailImgLoad"
-            data-idx="{{index}}"
-          />
-        </view>
-      </view>
-      <!-- 兼容旧数据单图 -->
-      <view class="detail-images" wx:elif="{{post.image}}">
-        <image class="detail-image" src="{{post.image}}" mode="widthFix" bindtap="onPreviewImage" data-index="0" />
-      </view>
-
-      <!-- 视频 -->
-      <view class="detail-video-wrap" wx:if="{{post.videos && post.videos.length > 0}}">
-        <video class="detail-video" src="{{post.videos[0]}}" object-fit="cover" controls></video>
-      </view>
     </view>
 
-    <!-- 互动按钮栏：分享与私信合并为「分享」入口；举报与主操作同一行，避免贴边过远 -->
+    <!-- 互动按钮栏 -->
     <view class="detail-actions">
       <view class="detail-actions-row">
-        <view class="action-btn {{isLiked ? 'action-active' : ''}}" bindtap="onLikeTap">
+        <view class="action-btn {{isLiked ? 'action-active' : ''}}" bindtap="onLikeTap" hover-class="action-btn-hover">
           <text class="action-emoji">{{isLiked ? '❤️' : '🤍'}}</text>
           <text class="action-count">{{post.likes || 0}}</text>
         </view>
-        <view class="action-btn {{isFavored ? 'action-active' : ''}}" bindtap="onFavorTap">
+        <view class="action-btn {{isFavored ? 'action-active' : ''}}" bindtap="onFavorTap" hover-class="action-btn-hover">
           <text class="action-emoji">{{isFavored ? '⭐' : '☆'}}</text>
           <text class="action-count">{{isFavored ? '已收藏' : '收藏'}}</text>
         </view>
-        <view class="action-btn" bindtap="onCommentFocus">
+        <view class="action-btn" bindtap="onCommentFocus" hover-class="action-btn-hover">
           <text class="action-emoji">💬</text>
           <text class="action-count">{{comments.length || 0}}</text>
         </view>
-        <view class="action-btn action-share-merge" bindtap="onOpenShareChatSheet">
+        <view class="action-btn action-share-merge" bindtap="onOpenShareChatSheet" hover-class="action-btn-hover">
           <text class="action-emoji">📤</text>
           <text class="action-count">分享</text>
         </view>
-        <view class="action-btn report-inline" bindtap="onReportTap">
+        <view class="action-btn report-inline" bindtap="onReportTap" hover-class="action-btn-hover">
           <text class="action-emoji report-emoji">⚠️</text>
           <text class="report-label">举报</text>
         </view>
@@ -174,7 +197,7 @@
     <view class="share-sheet-grabber"></view>
     <text class="share-sheet-title">分享与联系</text>
     <button class="share-sheet-btn share-sheet-btn-share" open-type="share">分享给微信好友</button>
-    <view class="share-sheet-btn" wx:if="{{!isOwner}}" bindtap="onSheetPrivateMsg">私信作者</view>
+    <view class="share-sheet-btn" wx:if="{{!isOwner}}" bindtap="onSheetPrivateMsg">转发到私信列表或作者</view>
     <view class="share-sheet-btn share-sheet-cancel" bindtap="onCloseShareChatSheet">取消</view>
   </view>
 </view>
